@@ -108,7 +108,7 @@ export class Bridge {
   async pick(browser) {
     const all = await this.browsers();
     if (!all.length) {
-      throw new BridgeError('no_browser', 'No browser is connected. Open the browser where you use HackerOne or Bugcrowd, click the ScopeDown icon, and turn on Agent access.');
+      throw new BridgeError('no_browser', 'No browser is connected. Open the browser where you use HackerOne or Bugcrowd, click the ScopeDown icon, and switch Agents on.');
     }
     if (!browser) return all[0];
     const want = browser.toLowerCase();

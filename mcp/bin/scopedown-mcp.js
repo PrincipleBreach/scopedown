@@ -46,12 +46,12 @@ switch (command) {
     const extensionIds = option('--extension-id') ? [option('--extension-id')] : [];
     const out = install({ only, extensionIds });
     if (!out.installed.length) {
-      console.log('No supported browser profile was found. Install Chrome, Brave, Edge, Arc, Chromium, Vivaldi or Firefox first.');
+      console.log('No browser profile was found. Open Chrome, Brave, Edge, Arc, Chromium, Vivaldi or Firefox once, then run install again.');
       process.exitCode = 1;
       break;
     }
     for (const i of out.installed) console.log(`Registered with ${i.browser}: ${i.manifest}`);
-    console.log(`\nNext:\n  1. In the browser, click the ScopeDown icon and turn on Agent access.\n  2. Add the server to your harness, for example:\n     claude mcp add scopedown -- npx -y @principlebreach/scopedown-mcp`);
+    console.log(`\nNext:\n  1. In the browser, click the ScopeDown icon and switch Agents on.\n  2. Add the server to your harness, for example:\n     claude mcp add scopedown -- npx -y @principlebreach/scopedown-mcp`);
     break;
   }
   case 'uninstall': {

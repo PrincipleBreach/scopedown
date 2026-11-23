@@ -4,6 +4,7 @@
 
 - `scopedown-mcp --version` prints the version, and the help names it.
 - Needs Node.js 22 or newer.
+- Install and connection messages name the popup's **Agents** switch, and say to open a browser once when none is found.
 
 ## 1.0.0
 

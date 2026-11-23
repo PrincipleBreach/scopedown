@@ -34,7 +34,8 @@ function nodePath() {
 }
 
 // Per-user NativeMessagingHosts folders. Only browsers whose profile folder exists get a manifest.
-function targets(home = homedir()) {
+function targets(given) {
+  const home = given || homedir();
   const os = platform();
   if (os === 'darwin') {
     const lib = join(home, 'Library', 'Application Support');
@@ -50,7 +51,8 @@ function targets(home = homedir()) {
     ].map(([name, root, kind]) => ({ name, root, kind, dir: join(root, kind === 'firefox' ? 'NativeMessagingHosts' : 'NativeMessagingHosts') }));
   }
   if (os === 'linux') {
-    const cfg = process.env.XDG_CONFIG_HOME || join(home, '.config');
+    // XDG_CONFIG_HOME belongs to the real home, so a home passed in (tests) keeps its own .config.
+    const cfg = (!given && process.env.XDG_CONFIG_HOME) || join(home, '.config');
     return [
       ['Chrome', join(cfg, 'google-chrome'), 'chromium'],
       ['Chromium', join(cfg, 'chromium'), 'chromium'],

@@ -13,10 +13,24 @@ const SEVERITIES = ['none', 'low', 'medium', 'high', 'critical'];
 async function gql(query, variables = {}) {
   const out = await runInPlatform(ORIGIN, pageRequest, [{ path: '/graphql', method: 'POST', json: { query, variables }, csrf: true, csrfFrom: '/hacktivity/overview' }]);
   if (out?.error) throw new RunnerError(out.error.code, out.error.message);
-  if (typeof out?.body !== 'object') throw new RunnerError('platform', `HackerOne returned HTTP ${out?.status}.`);
+  if (out?.status === 429) throw new RunnerError('rate_limited', 'HackerOne is rate limiting this account. Wait a minute and try again.');
+  // GraphQL answers errors with 200, so any other status is the platform failing, whatever the body.
+  if (!(out?.status >= 200 && out.status < 300) || typeof out.body !== 'object') throw new RunnerError('platform', `HackerOne returned HTTP ${out?.status}.`);
   if (out.body.errors?.length && !out.body.data) throw new RunnerError('platform', `HackerOne: ${out.body.errors[0].message}`);
   return out.body.data;
 }
+
+// A list under me. HackerOne answers a signed-out session with me: null, and a cursor it cannot
+// read with the list set to null, so those are told apart instead of both reading as signed out.
+function meList(data, field, cursor) {
+  if (!data?.me) throw new RunnerError('signed_out', 'Sign in to HackerOne in this browser.');
+  const conn = data.me[field];
+  if (conn) return conn;
+  if (cursor) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
+  throw new RunnerError('platform', 'HackerOne returned no list.');
+}
+
+const PRIVATE_STATES = new Set(['soft_launched', 'sandboxed']);
 
 export async function account() {
   return cached('h1:me', 60_000, async () => {
@@ -36,32 +50,45 @@ export async function program(handle) {
 }
 
 export async function listPrograms({ privateOnly, query, limit = 25, cursor }) {
-  const data = await gql(`query ScopeDownPrograms($first: Int!, $after: String, $search: String) {
+  const page = (after, first) => gql(`query ScopeDownPrograms($first: Int!, $after: String, $search: String) {
     me { teams_that_i_can_submit_reports_to(first: $first, after: $after, search: $search) {
       total_count pageInfo { hasNextPage endCursor }
-      nodes { handle name state offers_bounties submission_state }
+      edges { cursor node { handle name state offers_bounties submission_state } }
     } }
-  }`, { first: privateOnly ? 100 : limit, after: cursor || null, search: query || null });
-  const conn = data?.me?.teams_that_i_can_submit_reports_to;
-  if (!conn) throw new RunnerError('signed_out', 'Sign in to HackerOne in this browser.');
-  const programs = conn.nodes
-    .filter((t) => !privateOnly || t.state === 'soft_launched' || t.state === 'sandboxed')
-    .slice(0, limit)
-    .map((t) => ({
-      platform: 'hackerone',
-      handle: t.handle,
-      name: t.name,
-      visibility: { public_mode: 'public', soft_launched: 'private', sandboxed: 'sandbox' }[t.state] || t.state,
-      offers_bounties: t.offers_bounties,
-      submissions: t.submission_state,
-      url: `${H1}/${t.handle}`,
-    }));
+  }`, { first, after: after || null, search: query || null });
+  const row = (t) => ({
+    platform: 'hackerone',
+    handle: t.handle,
+    name: t.name,
+    visibility: { public_mode: 'public', soft_launched: 'private', sandboxed: 'sandbox' }[t.state] || t.state,
+    offers_bounties: t.offers_bounties,
+    submissions: t.submission_state,
+    url: `${H1}/${t.handle}`,
+  });
+
+  if (!privateOnly) {
+    const conn = meList(await page(cursor, limit), 'teams_that_i_can_submit_reports_to', cursor);
+    return { programs: conn.edges.map((e) => row(e.node)), total: conn.total_count, next_cursor: conn.pageInfo.hasNextPage ? conn.pageInfo.endCursor : null };
+  }
+
+  // HackerOne cannot filter by visibility, so read pages of 100 and keep the private ones. The next
+  // cursor is the cursor of the last program looked at, so the next call starts right after it.
+  const out = [];
+  let after = cursor || null;
+  let more = true;
+  for (let read = 0; read < 5 && more && out.length < limit; read++) {
+    const conn = meList(await page(after, 100), 'teams_that_i_can_submit_reports_to', after);
+    let i = 0;
+    for (; i < conn.edges.length && out.length < limit; i++) {
+      after = conn.edges[i].cursor;
+      if (PRIVATE_STATES.has(conn.edges[i].node.state)) out.push(row(conn.edges[i].node));
+    }
+    more = i < conn.edges.length || conn.pageInfo.hasNextPage;
+  }
   return {
-    programs,
-    // With private_only the filter runs on this page, so the platform's total would mislead.
-    total: privateOnly ? undefined : conn.total_count,
-    next_cursor: conn.pageInfo.hasNextPage ? conn.pageInfo.endCursor : null,
-    note: privateOnly ? 'Private programs from this page of up to 100. Pass next_cursor for more.' : undefined,
+    programs: out,
+    next_cursor: more ? after : null,
+    note: 'HackerOne has no private filter: each call reads up to 500 programs, so pass next_cursor until it is null.',
   };
 }
 
@@ -112,7 +139,8 @@ export async function disclosed({ handle, query, limit = 10, cursor }) {
   const parts = ['disclosed:true'];
   if (handle) parts.push(`team_handle:${handle.replace(/[^\w.-]/g, '')}`);
   if (words) parts.push(`(${words})`);
-  const from = Number(cursor) || 0;
+  if (cursor && !/^\d+$/.test(cursor)) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
+  const from = Number(cursor || 0);
   const data = await gql(`query ScopeDownHacktivity($q: String!, $from: Int!, $size: Int!) {
     search(index: CompleteHacktivityReportIndex, query_string: $q, from: $from, size: $size, sort: { field: "latest_disclosable_activity_at", direction: DESC }) {
       total_count
@@ -142,8 +170,7 @@ export async function myReports({ handle, limit = 25, cursor }) {
       nodes { _id title substate created_at url severity { rating } team { handle name } }
     } }
   }`, { first: limit, after: cursor || null, handle: handle || null });
-  const conn = data?.me?.reports;
-  if (!conn) throw new RunnerError('signed_out', 'Sign in to HackerOne in this browser.');
+  const conn = meList(data, 'reports', cursor);
   return {
     total: conn.total_count,
     reports: conn.nodes.map((r) => ({
@@ -159,7 +186,7 @@ export async function myReport(id, { cursor } = {}) {
     report(id: $id) {
       _id title state substate created_at url vulnerability_information
       severity { rating score } weakness { name external_id } structured_scope { asset_identifier }
-      team { handle name }
+      team { handle name } reporter { username }
       activities(first: 100, after: $after) {
         pageInfo { hasNextPage endCursor }
         nodes { __typename ... on ActivityInterface { created_at message internal actor { __typename ... on User { username } ... on Team { handle } } } }
@@ -168,8 +195,11 @@ export async function myReport(id, { cursor } = {}) {
   }`, { id: Number(id), after: cursor || null });
   const r = data?.report;
   if (!r) throw new RunnerError('not_found', `Report ${id} is not visible to this account.`);
+  // Disclosed reports by other hunters are readable too, so say whose this is.
+  const me = (await account()).username;
   return {
     platform: 'hackerone', id: r._id, title: r.title, state: r.substate, created_at: r.created_at, url: r.url,
+    reporter: r.reporter?.username || null, yours: Boolean(me) && r.reporter?.username === me,
     program: r.team?.handle, severity: r.severity?.rating || null, weakness: r.weakness?.name || null,
     asset: r.structured_scope?.asset_identifier || null,
     description: cursor ? undefined : r.vulnerability_information,
@@ -206,18 +236,22 @@ export async function fileReport(draft, { files = [], progress = async () => {} 
     if (hit) return { report_id: hit.id, url: `${H1}/reports/${hit.id}` };
   }
 
+  // Uploads are remembered by attachment id, not file name: a file the agent replaced after a
+  // failed attempt has a new id, so the retry uploads it instead of reusing the old one.
   done.uploaded ||= {};
   for (const f of files) {
-    if (done.uploaded[f.name]) continue;
-    const up = await runInPlatform(ORIGIN, pageAttach, [{ ...f, csrfFrom: '/hacktivity/overview' }]);
+    if (done.uploaded[f.id]) continue;
+    const { id, ...file } = f;
+    const up = await runInPlatform(ORIGIN, pageAttach, [{ ...file, csrfFrom: '/hacktivity/overview' }]);
     if (up?.error) throw new RunnerError(up.error.code, up.error.message);
-    done.uploaded[f.name] = up.id;
+    done.uploaded[id] = up.id;
     await progress(done);
   }
-  const ids = files.map((f) => done.uploaded[f.name]).filter(Boolean);
+  const ids = files.map((f) => done.uploaded[f.id]).filter(Boolean);
+  const byName = Object.fromEntries(files.map((f) => [f.name, done.uploaded[f.id]]));
 
   // {{attachment:name}} in the text becomes HackerOne's inline reference {F<id>}.
-  const ref = (text) => String(text).replace(/\{\{attachment:([^}]+)\}\}/g, (all, name) => (done.uploaded[name.trim()] ? `{F${done.uploaded[name.trim()]}}` : all));
+  const ref = (text) => String(text).replace(/\{\{attachment:([^}]+)\}\}/g, (all, name) => (byName[name.trim()] ? `{F${byName[name.trim()]}}` : all));
   const description = ref(reportBody(draft));
 
   done.creating_at = new Date().toISOString();

@@ -73,9 +73,10 @@ export function inPageArgs({ handle }) {
 
 export async function fetchInPage(handle, queries) {
   try {
-    // HackerOne's 404 page forbids all requests through its CSP, so answer before trying.
+    // HackerOne's 404 page forbids all requests through its CSP, so answer before trying. The
+    // runner then tries the user's next tab; the popup shows this message for the page it is on.
     if (performance.getEntriesByType('navigation')[0]?.responseStatus === 404) {
-      return { error: `There is no HackerOne program at /${handle}.`, reason: 'not_found' };
+      return { error: `This HackerOne page is a 404, so there is no program at ${location.pathname}.`, reason: 'bad_tab' };
     }
     // A signed-in POST needs the session's CSRF token. The agent's worker tab shows robots.txt,
     // which has no meta tag, so read the token from the site shell and keep it for the tab.

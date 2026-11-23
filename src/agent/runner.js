@@ -42,6 +42,8 @@ async function candidateTabs(origin) {
 }
 
 async function openWorker(origin) {
+  // A worker that showed an error page is replaced, not left open beside the new one.
+  if (workers[origin] != null) ext.tabs.remove(workers[origin]).catch(() => {});
   const tab = await ext.tabs.create({ url: origin + WORKER_PATH, active: false });
   workers[origin] = tab.id;
   await new Promise((resolve) => {
@@ -75,6 +77,10 @@ async function inject(tabId, func, args) {
 
 // Runs func(...args) in a working tab on `origin` (for example https://hackerone.com) and
 // returns its result. Calls to one origin are queued and spaced out.
+// A tab whose page cannot run requests (an error page). pageRequest says so with an error code,
+// program fetches with a reason.
+const badTab = (out) => out?.error?.code === 'bad_tab' || out?.reason === 'bad_tab';
+
 export async function runInPlatform(origin, func, args = []) {
   if (!/^https:\/\/[\w.-]+$/.test(origin)) throw new RunnerError('bad_platform', `Not a platform origin: ${origin}.`);
   const granted = await ext.permissions.contains({ origins: [`${origin}/*`] });
@@ -85,7 +91,7 @@ export async function runInPlatform(origin, func, args = []) {
     for (const tab of await candidateTabs(origin)) {
       try {
         const out = await inject(tab.id, func, args);
-        if (out?.error?.code === 'bad_tab') continue;
+        if (badTab(out)) continue;
         return out;
       } catch {
         // Tab navigated away or blocks injection; try the next.
@@ -93,7 +99,7 @@ export async function runInPlatform(origin, func, args = []) {
     }
     const id = await openWorker(origin);
     const out = await inject(id, func, args);
-    if (out?.error?.code === 'bad_tab') throw new RunnerError('platform', out.error.message);
+    if (badTab(out)) throw new RunnerError('platform', out.error?.message || out.error);
     return out;
   });
 }

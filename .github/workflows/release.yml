@@ -1,0 +1,54 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tag matches the manifest version
+        run: test "v$(node -p "require('./manifest.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm test
+      - name: Build the Chrome and Firefox zips (fetches Switzer and checks its pinned hash)
+        run: npm run build
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum scopedown-*.zip > SHA256SUMS
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: dist/scopedown-*.zip
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="## $version" '$0 == v { on = 1; next } on && (/^## / || /^---/) { exit } on' CHANGELOG.md > notes.md
+          test -s notes.md
+          cat >> notes.md <<EOF
+
+          ## Install
+
+          - Chrome, Edge, Brave: the Chrome Web Store, or unzip \`scopedown-$version-chrome.zip\` and load the folder at \`chrome://extensions\` (Developer mode, Load unpacked).
+          - Firefox: addons.mozilla.org, or load \`scopedown-$version-firefox.zip\` at \`about:debugging\` (This Firefox, Load Temporary Add-on).
+          - Agents: \`npx @principlebreach/scopedown-mcp install\`. An unpacked zip gets its own extension ID: add \`--extension-id <id>\` with the ID shown at \`chrome://extensions\`.
+
+          Verify a download: \`gh attestation verify scopedown-$version-chrome.zip -R $GITHUB_REPOSITORY\`, or compare it with \`SHA256SUMS\`.
+          EOF
+      - uses: softprops/action-gh-release@v3
+        with:
+          name: ScopeDown ${{ github.ref_name }}
+          body_path: notes.md
+          files: |
+            dist/scopedown-*.zip
+            dist/SHA256SUMS

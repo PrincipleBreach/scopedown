@@ -1,0 +1,30 @@
+name: Wrong Markdown for a program
+description: A program's scope, rewards, key rules or policy come out wrong or incomplete.
+labels: [markdown]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Public programs only. For a private program, describe the structure without its name or content.
+  - type: input
+    id: url
+    attributes:
+      label: Program URL
+      placeholder: https://hackerone.com/security
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong
+      description: Quote the lines of the Markdown that are wrong, and what the program page shows instead.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      placeholder: "1.0.0"
+    validations:
+      required: true

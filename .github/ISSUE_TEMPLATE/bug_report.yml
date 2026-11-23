@@ -1,0 +1,67 @@
+name: Bug report
+description: Something in the extension, the agent console or the MCP server does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Issues are public. Do not paste private program details, report text, cookies or tokens. Reproduce on a public program when you can.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open https://hackerone.com/security
+        2. Press Alt+Shift+S
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: part
+    attributes:
+      label: Part
+      options:
+        - Popup or Markdown
+        - Agent console
+        - MCP server or bridge install
+        - Filling the platform's form
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - HackerOne
+        - Bugcrowd
+        - Both
+        - Not platform-specific
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: The extension version from chrome://extensions or about:addons, the output of `npx @principlebreach/scopedown-mcp --version`, the browser and the OS.
+      placeholder: ScopeDown 1.0.0, scopedown-mcp 1.0.1, Chrome 142, macOS 15
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      description: For agent issues only.
+      placeholder: Claude Code 2.1
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Error text from the browser console, `npx @principlebreach/scopedown-mcp doctor`, or the console's Activity page. Remove anything private first.
+      render: text

@@ -2,12 +2,13 @@
 
 ## Reporting a Vulnerability
 
-Email **security@principlebreach.com**. Do not open a public issue for an
+Report it privately through [GitHub](https://github.com/PrincipleBreach/scopedown/security/advisories/new)
+or by email to **security@principlebreach.com**. Do not open a public issue for an
 unpublished vulnerability in ScopeDown, its MCP server, or its release pipeline.
 
 Include what you have:
 
-- The extension version (`chrome://extensions`), the MCP server version (`scopedown-mcp --help`), and the browser.
+- The extension version (`chrome://extensions`), the MCP server version (`npx @principlebreach/scopedown-mcp --version`), and the browser.
 - The smallest steps or MCP calls that reproduce the issue.
 - The impact and affected component.
 - Any disclosure constraints and preferred credit.

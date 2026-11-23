@@ -7,6 +7,7 @@ import { join, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { HOST_NAME, CHROMIUM_EXTENSION_IDS, FIREFOX_EXTENSION_IDS, binDir, scopedownHome, socketsDir } from './paths.js';
+import { VERSION } from './version.js';
 
 const PACKAGE = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -16,7 +17,7 @@ function copyApp() {
   const app = join(scopedownHome(), 'app');
   rmSync(app, { recursive: true, force: true });
   for (const dir of ['bin', 'src']) cpSync(join(PACKAGE, dir), join(app, dir), { recursive: true });
-  writeFileSync(join(app, 'package.json'), '{ "type": "module" }\n');
+  writeFileSync(join(app, 'package.json'), `${JSON.stringify({ type: 'module', version: VERSION })}\n`);
   return join(app, 'bin', 'scopedown-mcp.js');
 }
 

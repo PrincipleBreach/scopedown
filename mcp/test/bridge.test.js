@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { mkdtempSync, existsSync, readdirSync, readFileSync, statSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -120,6 +120,8 @@ test('install registers the host for browsers that exist and nothing else', asyn
   const launcher = readFileSync(manifest.path, 'utf8');
   assert.match(launcher, /exec ".*node" ".*\/\.scopedown\/app\/bin\/scopedown-mcp\.js" host "\$@"/, launcher);
   assert.ok(existsSync(join(process.env.SCOPEDOWN_HOME, 'app', 'src', 'host.js')), 'host code is copied out of the package');
+  const copied = execFileSync(process.execPath, [join(process.env.SCOPEDOWN_HOME, 'app', 'bin', 'scopedown-mcp.js'), '--version'], { encoding: 'utf8' }).trim();
+  assert.equal(copied, JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version, 'the copied host knows its version');
   assert.ok(launcher.includes(`SCOPEDOWN_HOME="${process.env.SCOPEDOWN_HOME}"`), 'custom home is pinned');
 
   const removed = uninstall({ home });

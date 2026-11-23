@@ -2,14 +2,17 @@
 // scopedown-mcp: the MCP server (default), the native messaging host the browser starts,
 // and the commands that install and check both.
 
+import { VERSION } from '../src/version.js';
+
 const [command = 'serve', ...rest] = process.argv.slice(2);
 
-const usage = `scopedown-mcp, the ScopeDown agent bridge by Principle Breach
+const usage = `scopedown-mcp ${VERSION}, the ScopeDown agent bridge by Principle Breach
 
   scopedown-mcp                 Run the MCP server on stdio (what your agent harness starts)
   scopedown-mcp install         Register the bridge with your installed browsers
   scopedown-mcp uninstall       Remove it again
   scopedown-mcp doctor          Show what is installed and which browsers are connected
+  scopedown-mcp --version       Print the version
 
 Install options:
   --browser <name>              Only this browser (chrome, brave, edge, arc, chromium, vivaldi, firefox)
@@ -67,6 +70,11 @@ switch (command) {
   case '--help':
   case '-h':
     console.log(usage);
+    break;
+  case 'version':
+  case '--version':
+  case '-v':
+    console.log(VERSION);
     break;
   default:
     // Firefox starts native hosts with the manifest path as the first argument.

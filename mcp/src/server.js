@@ -6,8 +6,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { Bridge, BridgeError } from './client.js';
 import { readEvidence, FileRefused } from './files.js';
+import { VERSION } from './version.js';
 
-export const VERSION = '1.0.0';
+export { VERSION };
 
 const INSTRUCTIONS = `ScopeDown connects you to the HackerOne and Bugcrowd programs the user can access, through the user's own logged-in browser.
 

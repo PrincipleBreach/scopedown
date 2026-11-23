@@ -1,5 +1,10 @@
 # Changelog
 
+## scopedown-mcp 1.0.1
+
+- `scopedown-mcp --version` prints the version, and the help names it.
+- Needs Node.js 22 or newer.
+
 ## 1.0.0
 
 First public release.

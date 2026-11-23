@@ -1,6 +1,6 @@
 {
   "name": "@principlebreach/scopedown-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server that gives AI agents your HackerOne and Bugcrowd access through the ScopeDown browser extension.",
   "keywords": [
     "mcp",
@@ -33,7 +33,7 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"

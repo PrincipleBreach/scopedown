@@ -51,7 +51,7 @@ export async function fetchInPage(code) {
       briefPath = findBriefPath(new DOMParser().parseFromString(html, 'text/html'));
     }
     if (!briefPath) {
-      return { error: 'No program brief found here. Sign in, and check you can see this engagement.' };
+      return { error: 'No program brief found here. Sign in, and check you can see this engagement.', reason: 'not_found' };
     }
     const url = new URL(briefPath, location.origin);
     if (!url.pathname.endsWith('.json')) url.pathname += '.json';

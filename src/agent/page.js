@@ -9,22 +9,33 @@ export async function pageRequest(req) {
     if (nav?.responseStatus >= 400) return { error: { code: 'bad_tab', message: `This tab shows an error page (${nav.responseStatus}).` } };
 
     const KEY = '__scopedownCsrf';
-    let csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || globalThis[KEY];
-    if (req.csrf && !csrf) {
-      // Pages without the meta tag (robots.txt in the worker tab): read it from the site shell.
+    // Pages without the meta tag (robots.txt in the worker tab): read it from the site shell.
+    const loadCsrf = async () => {
       const html = await (await fetch(req.csrfFrom || '/', { credentials: 'include', headers: { Accept: 'text/html' } })).text();
-      csrf = html.match(/name="csrf-token" content="([^"]+)"/)?.[1] || html.match(/"csrfToken":"([^"]+)"/)?.[1] || null;
-      if (csrf) Object.defineProperty(globalThis, KEY, { value: csrf, configurable: true });
+      const token = html.match(/name="csrf-token" content="([^"]+)"/)?.[1] || html.match(/"csrfToken":"([^"]+)"/)?.[1] || null;
+      if (token) Object.defineProperty(globalThis, KEY, { value: token, configurable: true });
+      return token;
+    };
+    const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    let csrf = meta || globalThis[KEY] || (req.csrf ? await loadCsrf() : null);
+    const send = () => {
+      const headers = { Accept: req.accept || 'application/json' };
+      if (req.json !== undefined) headers['Content-Type'] = 'application/json';
+      if (req.csrf && csrf) headers['X-CSRF-Token'] = csrf;
+      return fetch(req.path, {
+        method: req.method || 'GET',
+        credentials: 'include',
+        headers,
+        body: req.json !== undefined ? JSON.stringify(req.json) : undefined,
+      });
+    };
+    let res = await send();
+    // A token cached from an older session (signed out and in again): replace it and try once more.
+    // A 403 means the request was refused, so sending it again cannot repeat its effect.
+    if (res.status === 403 && req.csrf && !meta) {
+      csrf = await loadCsrf();
+      res = await send();
     }
-    const headers = { Accept: req.accept || 'application/json' };
-    if (req.json !== undefined) headers['Content-Type'] = 'application/json';
-    if (req.csrf && csrf) headers['X-CSRF-Token'] = csrf;
-    const res = await fetch(req.path, {
-      method: req.method || 'GET',
-      credentials: 'include',
-      headers,
-      body: req.json !== undefined ? JSON.stringify(req.json) : undefined,
-    });
     const type = res.headers.get('content-type') || '';
     const body = type.includes('json') ? await res.json() : await res.text();
     return { status: res.status, url: res.url, redirected: res.redirected, body };

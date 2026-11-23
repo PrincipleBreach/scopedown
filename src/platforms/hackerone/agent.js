@@ -29,7 +29,8 @@ export async function account() {
 export async function program(handle) {
   return cached(`h1:program:${handle}`, 5 * 60_000, async () => {
     const raw = await runInPlatform(ORIGIN, hackerone.fetchInPage, hackerone.inPageArgs({ handle }));
-    if (raw?.error) throw new RunnerError('not_found', raw.error);
+    // Only a missing program is not_found; a refused or failed request is the platform's error.
+    if (raw?.error) throw new RunnerError(raw.reason || 'platform', raw.error);
     return hackerone.normalize(raw, { fetchedAt: new Date().toISOString() });
   });
 }

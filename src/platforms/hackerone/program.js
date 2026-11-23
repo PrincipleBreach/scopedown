@@ -75,17 +75,32 @@ export async function fetchInPage(handle, queries) {
   try {
     // HackerOne's 404 page forbids all requests through its CSP, so answer before trying.
     if (performance.getEntriesByType('navigation')[0]?.responseStatus === 404) {
-      return { error: `There is no HackerOne program at /${handle}.` };
+      return { error: `There is no HackerOne program at /${handle}.`, reason: 'not_found' };
     }
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
-    if (csrf) headers['X-CSRF-Token'] = csrf;
+    // A signed-in POST needs the session's CSRF token. The agent's worker tab shows robots.txt,
+    // which has no meta tag, so read the token from the site shell and keep it for the tab.
+    const KEY = '__scopedownCsrf';
+    const loadCsrf = async () => {
+      const html = await (await fetch('/hacktivity/overview', { credentials: 'include', headers: { Accept: 'text/html' } })).text();
+      const token = html.match(/name="csrf-token" content="([^"]+)"/)?.[1] || null;
+      if (token) Object.defineProperty(globalThis, KEY, { value: token, configurable: true });
+      return token;
+    };
+    const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    let csrf = meta || globalThis[KEY] || await loadCsrf();
     const warnings = [];
 
-    const gql = async (query, variables) => {
+    const gql = async (query, variables, retried = false) => {
+      const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      if (csrf) headers['X-CSRF-Token'] = csrf;
       const res = await fetch(new URL('/graphql', location.origin), {
         method: 'POST', credentials: 'include', headers, body: JSON.stringify({ query, variables }),
       });
+      // A token cached from an older session: replace it once.
+      if (res.status === 403 && !meta && !retried) {
+        csrf = await loadCsrf();
+        return gql(query, variables, true);
+      }
       if (!res.ok) throw new Error(`HackerOne API returned HTTP ${res.status}.`);
       const body = await res.json();
       for (const e of body.errors || []) warnings.push(e.message);
@@ -95,9 +110,10 @@ export async function fetchInPage(handle, queries) {
     const data = await gql(queries.team, { handle });
     const team = data.team;
     if (!team) {
-      return { error: warnings[0]
-        ? `HackerOne API: ${warnings[0]}`
-        : `No program "${handle}" is visible to this account. Sign in if it is private.` };
+      return {
+        error: warnings[0] ? `HackerOne API: ${warnings[0]}` : `No program "${handle}" is visible to this account. Sign in if it is private.`,
+        reason: 'not_found',
+      };
     }
 
     // Follow pagination so large programs come back complete.

@@ -29,9 +29,11 @@ async function tx(mode, fn) {
   const d = await db();
   return new Promise((resolve, reject) => {
     const t = d.transaction('files', mode);
-    const out = fn(t.objectStore('files'));
-    t.oncomplete = () => resolve(out?.result ?? out);
+    const request = fn(t.objectStore('files'));
+    // A get for a missing id has result undefined; that is the answer, not the request itself.
+    t.oncomplete = () => resolve(request.result);
     t.onerror = () => reject(t.error);
+    t.onabort = () => reject(t.error || new Error('The browser aborted the evidence storage write, for example because the disk is full.'));
   });
 }
 
@@ -94,6 +96,9 @@ export function addChunk({ uploadId, index, data }) {
   u.at = Date.now();
   return { received: u.received };
 }
+
+// The draft an upload in progress belongs to, so a failed upload can be reported against it.
+export const uploadDraft = (uploadId) => uploads.get(uploadId)?.draftId ?? null;
 
 // Verifies the whole file and stores it. Returns the stored file's metadata.
 export async function finishUpload({ uploadId, by }) {

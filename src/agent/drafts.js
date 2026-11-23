@@ -7,7 +7,7 @@
 import { getAdapter } from '../platforms/index.js';
 import { checkScope } from './scope.js';
 import { RunnerError } from './runner.js';
-import { getSettings, getDraft, getDrafts, putDraft } from './store.js';
+import { getSettings, getDraft, getDrafts, putDraft, removeDraft } from './store.js';
 import { loadFile, deleteFile, toBase64, MAX_FILES } from './files.js';
 
 const ext = globalThis.browser ?? globalThis.chrome;
@@ -89,9 +89,13 @@ export async function updateDraft(id, params, by) {
 
 // Sends a draft to the platform, through the adapter's file(). Callers: the console's Submit
 // button, createDraft for programs on the auto-submit list, and resumeInterrupted.
-export async function submitDraft(id, { by }) {
+export async function submitDraft(id, { by, reviewed }) {
   const draft = await getDraft(id);
   if (!draft) throw new RunnerError('not_found', `No draft ${id}.`);
+  // The console sends the version the hunter read. An agent may have revised the draft since.
+  if (reviewed && draft.updated_at !== reviewed) {
+    throw new RunnerError('changed', 'The agent changed this draft after you opened it. Read the new version, then submit again.');
+  }
   const adapter = adapterFor(draft.platform);
   const resuming = draft.status === 'submitting' && by === 'resume';
   if (!resuming && !['pending_review', 'failed'].includes(draft.status)) throw new RunnerError('locked', `Draft ${id} is ${draft.status}.`);
@@ -127,9 +131,20 @@ async function filesFor(draft) {
   const out = [];
   for (const a of draft.attachments || []) {
     const f = await loadFile(a.id);
-    if (f) out.push({ name: f.name, type: f.type, base64: toBase64(f.bytes) });
+    if (f) out.push({ id: a.id, name: f.name, type: f.type, base64: toBase64(f.bytes) });
   }
   return out;
+}
+
+// An auto-submit draft waits for the files its agent announced. When one of them fails, it stops
+// waiting and goes to the hunter instead: a report must not go out without its evidence, and
+// a counter that never reaches zero would leave it unfiled with nobody told.
+export async function stopAutoSubmit(draftId, reason) {
+  const draft = await getDraft(draftId);
+  if (!draft?.auto_submit_after_files) return;
+  const at = new Date().toISOString();
+  const next = await putDraft({ ...draft, auto_submit_after_files: undefined, history: [...draft.history, { at, event: `auto-submit stopped: ${reason}`.slice(0, 200), by: 'scopedown' }] });
+  await announce(next);
 }
 
 // The file's bytes are already stored under meta.id; they are dropped again if it is refused.
@@ -137,6 +152,7 @@ export async function addAttachment(draftId, meta) {
   const draft = await getDraft(draftId);
   const refuse = async (code, message) => {
     await deleteFile(meta.id).catch(() => {});
+    await stopAutoSubmit(draftId, message);
     throw new RunnerError(code, message);
   };
   if (!draft) return refuse('not_found', `No draft ${draftId}.`);
@@ -241,10 +257,8 @@ export async function rejectDraft(id, note, { by }) {
 }
 
 export async function deleteDraft(id) {
-  const drafts = await getDrafts();
-  for (const a of drafts[id]?.attachments || []) await deleteFile(a.id).catch(() => {});
-  delete drafts[id];
-  await ext.storage.local.set({ drafts });
+  const gone = await removeDraft(id);
+  for (const a of gone?.attachments || []) await deleteFile(a.id).catch(() => {});
   await updateBadge();
 }
 

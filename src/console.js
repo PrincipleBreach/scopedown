@@ -458,7 +458,7 @@ async function submit(d) {
     confirm: 'Submit report',
   });
   if (r.action !== 'confirm') return;
-  const out = await call('draft:submit', { id: d.id });
+  const out = await call('draft:submit', { id: d.id, reviewed: d.updated_at });
   if (out.status === 'submitted') toast('Report filed.', { action: out.report?.url ? { label: 'View', run: () => window.open(out.report.url, '_blank', 'noopener') } : null });
   else toast(out.error || 'Filing failed.', { tone: 'error' });
   await render();

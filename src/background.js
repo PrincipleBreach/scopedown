@@ -7,7 +7,7 @@ import { connectBridge, disconnectBridge, setDispatcher } from './agent/bridge.j
 import { createOps } from './agent/ops.js';
 import { submitDraft, handOff, rejectDraft, updateDraft, deleteDraft, updateBadge, resumeInterrupted, addAttachment, removeAttachment } from './agent/drafts.js';
 import { loadFile, saveFile, checkName, typeFor, sha256, toBase64, fromBase64, MAX_FILE_BYTES } from './agent/files.js';
-import { getSettings, setSettings, getDrafts, getActivity, getConnection } from './agent/store.js';
+import { getSettings, setSettings, getDrafts, getActivity, getConnection, clearActivity, FINISHED } from './agent/store.js';
 
 const ext = globalThis.browser ?? globalThis.chrome;
 
@@ -46,10 +46,10 @@ const handlers = {
     };
   },
   async 'activity:clear'() {
-    await ext.storage.local.set({ activity: [] });
+    await clearActivity();
   },
   async 'drafts:clear-finished'() {
-    const done = Object.values(await getDrafts()).filter((d) => ['submitted', 'rejected', 'handed_off'].includes(d.status));
+    const done = Object.values(await getDrafts()).filter((d) => FINISHED.includes(d.status));
     for (const d of done) await deleteDraft(d.id);
     return done.length;
   },
@@ -80,7 +80,7 @@ const handlers = {
   },
   'activity:list': () => getActivity(),
   'draft:save': ({ id, fields }) => updateDraft(id, fields, 'user'),
-  'draft:submit': ({ id }) => submitDraft(id, { by: 'user' }),
+  'draft:submit': ({ id, reviewed }) => submitDraft(id, { by: 'user', reviewed }),
   'draft:handoff': ({ id }) => handOff(id, { by: 'user' }),
   'draft:reject': ({ id, note }) => rejectDraft(id, note, { by: 'user' }),
   'draft:delete': ({ id }) => deleteDraft(id),

@@ -5,8 +5,18 @@
 import { ADAPTERS, getAdapter } from '../platforms/index.js';
 import { checkScope } from './scope.js';
 import { RunnerError } from './runner.js';
-import { createDraft, updateDraft, waitForDecision, publicDraft, addAttachment, removeAttachment } from './drafts.js';
-import { beginUpload, addChunk, finishUpload } from './files.js';
+import { createDraft, updateDraft, waitForDecision, publicDraft, addAttachment, removeAttachment, stopAutoSubmit } from './drafts.js';
+import { beginUpload, addChunk, finishUpload, uploadDraft } from './files.js';
+
+// Runs one step of an upload. If it fails, an auto-submit draft stops waiting for the file.
+async function failing(draftId, step) {
+  try {
+    return await step();
+  } catch (e) {
+    if (draftId) await stopAutoSubmit(draftId, e.message).catch(() => {});
+    throw e;
+  }
+}
 import { getSettings, getDrafts, logActivity } from './store.js';
 
 const STATUSES = ['pending_review', 'submitting', 'submitted', 'rejected', 'handed_off', 'failed'];
@@ -57,17 +67,16 @@ export function createOps({ build }) {
   // one platform's failure does not hide the others.
   const each = async (p, fn) => {
     const one = v.adapter(p.platform, { optional: true });
-    const out = {};
-    for (const a of one ? [one] : ADAPTERS) {
+    // Platforms answer independently, so ask them together; results keep the adapter order.
+    return Object.fromEntries(await Promise.all((one ? [one] : ADAPTERS).map(async (a) => {
       try {
         await allowed(a);
-        out[a.id] = await fn(a);
+        return [a.id, await fn(a)];
       } catch (e) {
         if (one) throw e;
-        out[a.id] = { error: e.message };
+        return [a.id, { error: e.message }];
       }
-    }
-    return out;
+    })));
   };
 
   const ops = {
@@ -191,15 +200,17 @@ export function createOps({ build }) {
       const id = v.str(p.draft_id, 64, { optional: false });
       const draft = await waitForDecision(id, 0);
       if (!['pending_review', 'rejected', 'failed'].includes(draft.status)) throw new RunnerError('locked', `Draft ${id} is ${draft.status}.`);
-      return beginUpload({ draftId: id, name: p.name, size: p.size, sha: p.sha256 });
+      return failing(id, () => beginUpload({ draftId: id, name: p.name, size: p.size, sha: p.sha256 }));
     },
 
     async attach_chunk(p) {
-      return addChunk({ uploadId: v.str(p.upload_id, 40, { optional: false }), index: v.int(p.index, 0, 100, undefined), data: v.str(p.data, 800_000, { optional: false }) });
+      const uploadId = v.str(p.upload_id, 40, { optional: false });
+      return failing(uploadDraft(uploadId), () => addChunk({ uploadId, index: v.int(p.index, 0, 100, undefined), data: v.str(p.data, 800_000, { optional: false }) }));
     },
 
     async attach_end(p, client) {
-      const { meta, draftId } = await finishUpload({ uploadId: v.str(p.upload_id, 40, { optional: false }), by: client?.name || 'agent' });
+      const uploadId = v.str(p.upload_id, 40, { optional: false });
+      const { meta, draftId } = await failing(uploadDraft(uploadId), () => finishUpload({ uploadId, by: client?.name || 'agent' }));
       return publicDraft(await addAttachment(draftId, meta));
     },
 

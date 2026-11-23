@@ -32,16 +32,43 @@ security.team.id = Buffer.from('gid://hackerone/Engagements::BugBountyProgram/13
 security.team.structured_scopes.nodes.forEach((n, i) => { n.id = Buffer.from(`gid://hackerone/StructuredScope/${1000 + i}`).toString('base64'); });
 
 const filedTitles = [];
+// HackerOne connections page with per-item cursors (base64 offsets, like "MQ" for 1). A bad
+// cursor nulls the field and adds an error; a signed-out session has me: null.
+const h1Teams = [];
+let h1SignedOut = false;
+function h1Page(list, first, after) {
+  const from = after == null ? 0 : Number(Buffer.from(after, 'base64').toString());
+  if (after != null && !Number.isInteger(from)) return null;
+  const slice = list.slice(from, from + first);
+  return {
+    total_count: list.length,
+    pageInfo: { hasNextPage: from + first < list.length, endCursor: Buffer.from(String(from + slice.length)).toString('base64') },
+    edges: slice.map((node, i) => ({ cursor: Buffer.from(String(from + i + 1)).toString('base64'), node })),
+    nodes: slice,
+  };
+}
+
 function answerGraphql(query, variables) {
+  if (/ScopeDownPrograms/.test(query)) {
+    if (h1SignedOut) return { me: null };
+    const teams = h1Teams.filter((t) => !variables.search || t.name.toLowerCase().includes(variables.search.toLowerCase()));
+    return { me: { teams_that_i_can_submit_reports_to: h1Page(teams, variables.first, variables.after) } };
+  }
   if (/createReport\(input/.test(query)) {
+    lastFiled = variables.input;
+    if (refuseCreate) return { createReport: { was_successful: false, errors: { edges: [{ node: { field: 'severity_rating', message: 'is invalid' } }] }, report: null } };
     filedTitles.push({ title: variables.input.title, at: new Date().toISOString() });
     return { createReport: { was_successful: true, errors: { edges: [] }, report: { _id: '4242', url: 'https://hackerone.com/reports/4242' } } };
   }
   if (/ScopeDownMyReports/.test(query)) {
+    if (variables.after === 'garbage') return { me: { reports: null } };
     return { me: { reports: { total_count: filedTitles.length, pageInfo: { hasNextPage: false }, nodes: filedTitles.map((f, i) => ({ _id: String(5150 + i), title: f.title, substate: 'new', created_at: f.at, url: `https://hackerone.com/reports/${5150 + i}`, team: { handle: 'security' } })) } } };
   }
   if (/team_weaknesses/.test(query)) return { team: { team_weaknesses: { total_count: 1, nodes: [{ instruction: null, weakness: { id: Buffer.from('gid://hackerone/Weakness/60').toString('base64'), name: 'Cross-site Scripting (XSS) - Stored', external_id: 'cwe-79' } }] } } };
   if (/me \{ username/.test(query)) return { me: { username: 'tester' } };
+  if (/ScopeDownReport\(/.test(query)) {
+    return { report: { _id: String(variables.id), title: 'A report', substate: 'triaged', created_at: '2026-11-01T00:00:00Z', url: `https://hackerone.com/reports/${variables.id}`, vulnerability_information: 'x', reporter: { username: variables.id === 1 ? 'tester' : 'someone-else' }, team: { handle: 'security' }, activities: { pageInfo: { hasNextPage: false }, nodes: [] } } };
+  }
   if (/ScopeDownRequirements/.test(query)) {
     // "formonly" stands in for programs like PayPal or Uber: required custom fields.
     const custom = variables.handle !== 'formonly' ? [] : [
@@ -56,6 +83,9 @@ function answerGraphql(query, variables) {
 
 // Bugcrowd's JSON lists, as the site serves them. Like Bugcrowd, submissions only honour filters
 // in array form (offset[]=, sort[]=, draft[]=); a bare offset= is ignored. Engagements page by 24.
+let refuseCreate = false; // HackerOne refuses createReport while set
+let lastFiled = null;
+let httpError = null; // set to an HTTP status to make every pageRequest fail with a JSON body
 const bcSubmissions = [];
 const bcEngagements = { invite_only: [], open: [] };
 function bugcrowdJson(path) {
@@ -97,6 +127,9 @@ globalThis.chrome = {
       if (func.name === 'bugcrowdFormProps') {
         const targets = tesla.brief.data.scope.filter((g) => g.inScope).flatMap((g) => g.targets).map((t, i) => ({ id: `t-${i}`, name: t.name }));
         return [{ result: { username: 'tester', disabled: false, targets, vrt: VRT, throttle: { weeklyRemaining: 6, weeklyCap: 6, atCap: false }, captcha: true } }];
+      }
+      if (func.name === 'pageRequest' && httpError) {
+        return [{ result: { status: httpError, url: `https://example.test${args[0].path}`, body: { error: 'Service trouble' } } }];
       }
       if (func.name === 'pageRequest') {
         const req = args[0];
@@ -449,11 +482,18 @@ async function pageThrough(op, args, key) {
 
 test('Bugcrowd: your submissions page in order, with no gaps or repeats, drafts excluded', async () => {
   bcSubmissions.length = 0;
-  for (let i = 1; i <= 60; i++) bcSubmissions.push({ reference_number: `r-${i}`, caption: `Finding ${i}`, substate: 'triaged', engagement_name: i % 2 ? 'Tesla' : 'Okta', submission_url: `/submissions/r-${i}` });
+  for (let i = 1; i <= 60; i++) bcSubmissions.push({ reference_number: `r-${i}`, caption: `Finding ${i}`, substate: 'triaged', engagement_name: i % 2 ? 'Tesla' : 'Okta', engagement_code: i % 2 ? 'tesla' : 'okta', submission_url: `/submissions/r-${i}` });
   bcSubmissions.splice(3, 0, { reference_number: 'draft-1', caption: 'Unsent', draft: true });
   const { seen, last } = await pageThrough('list_my_reports', { limit: 7 }, 'reports');
   assert.deepEqual(seen.map((r) => r.id), Array.from({ length: 60 }, (_, i) => `r-${i + 1}`));
   assert.equal(last.total, 60);
+
+  // A program filter matches the engagement code exactly, and returns codes get_program takes.
+  const okta = (await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'okta', limit: 100 })).result.bugcrowd;
+  assert.equal(okta.reports.length, 30);
+  assert.ok(okta.reports.every((r) => r.program === 'okta'));
+  assert.equal(okta.total, undefined, 'a filtered page does not claim the unfiltered total');
+  assert.equal((await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'ok', limit: 100 })).result.bugcrowd.reports.length, 0);
   bcSubmissions.length = 0;
 });
 
@@ -466,6 +506,140 @@ test('Bugcrowd: program search runs on the server and pages without gaps', async
   const invites = await pageThrough('list_programs', { limit: 1 }, 'programs');
   assert.deepEqual(invites.seen.map((p) => p.handle), ['alpha-private', 'beta-private']);
   bcEngagements.invite_only = []; bcEngagements.open = [];
+});
+
+test('HackerOne: private_only pages through every private program, none skipped', async () => {
+  h1Teams.length = 0;
+  for (let i = 0; i < 230; i++) h1Teams.push({ handle: `t${i}`, name: `Team ${i}`, state: i % 7 === 0 ? 'soft_launched' : 'public_mode', offers_bounties: true, submission_state: 'open' });
+  const want = h1Teams.filter((t) => t.state === 'soft_launched').map((t) => t.handle);
+  const seen = [];
+  let cursor;
+  for (let i = 0; i < 40; i++) {
+    const out = await dispatch('list_programs', { platform: 'hackerone', private_only: true, limit: 4, ...(cursor ? { cursor } : {}) });
+    assert.equal(out.error, undefined, JSON.stringify(out.error));
+    seen.push(...out.result.hackerone.programs.map((p) => p.handle));
+    cursor = out.result.hackerone.next_cursor;
+    if (!cursor) break;
+  }
+  assert.deepEqual(seen, want);
+  h1Teams.length = 0;
+});
+
+test('HackerOne: a bad cursor is a bad request, and signed out is signed out', async () => {
+  h1Teams.push({ handle: 'a', name: 'A', state: 'public_mode' });
+  assert.equal((await dispatch('list_programs', { platform: 'hackerone', cursor: 'garbage' })).error.code, 'bad_request');
+  assert.equal((await dispatch('list_my_reports', { platform: 'hackerone', cursor: 'garbage' })).error.code, 'bad_request');
+  assert.equal((await dispatch('search_disclosed_reports', { query: 'xss', cursor: 'garbage' })).error.code, 'bad_request');
+  h1SignedOut = true;
+  assert.equal((await dispatch('list_programs', { platform: 'hackerone' })).error.code, 'signed_out');
+  h1SignedOut = false;
+  h1Teams.length = 0;
+});
+
+test('get_my_report says whose report it is', async () => {
+  const mine = (await dispatch('get_my_report', { platform: 'hackerone', id: '1' })).result;
+  assert.equal(mine.yours, true);
+  const other = (await dispatch('get_my_report', { platform: 'hackerone', id: '2' })).result;
+  assert.equal(other.yours, false);
+  assert.equal(other.reporter, 'someone-else');
+});
+
+test('an HTTP error with a JSON body is an error, never an empty list or a sign-out', async () => {
+  httpError = 429;
+  assert.equal((await dispatch('list_my_reports', { platform: 'bugcrowd' })).error.code, 'rate_limited');
+  assert.equal((await dispatch('list_programs', { platform: 'bugcrowd', query: 'tesla' })).error.code, 'rate_limited');
+  httpError = 503;
+  const h1 = (await dispatch('list_my_reports', { platform: 'hackerone' })).error;
+  assert.equal(h1.code, 'platform');
+  assert.match(h1.message, /503/);
+  httpError = null;
+});
+
+test('a missing evidence file loads as nothing, not as a truthy request object', async () => {
+  const { loadFile } = await import('../src/agent/files.js');
+  assert.equal(await loadFile('f_missing'), undefined);
+});
+
+test('drafts and log entries written at the same moment are all kept', async () => {
+  const { putDraft, getDrafts, logActivity, getActivity } = await import('../src/agent/store.js');
+  const before = (await getActivity()).length;
+  const at = new Date().toISOString();
+  await Promise.all(Array.from({ length: 20 }, (_, i) => putDraft({ id: `d_race${i}`, created_at: at, status: 'pending_review', history: [] })));
+  await Promise.all(Array.from({ length: 10 }, (_, i) => logActivity({ op: `race${i}`, ok: true })));
+  const drafts = await getDrafts();
+  assert.equal(Array.from({ length: 20 }, (_, i) => `d_race${i}`).filter((id) => drafts[id]).length, 20);
+  assert.equal((await getActivity()).length, Math.min(before + 10, 300));
+  await chrome.storage.local.set({ drafts: Object.fromEntries(Object.entries(drafts).filter(([id]) => !id.startsWith('d_race'))) });
+});
+
+test('past 200 drafts only finished ones are dropped, never one still waiting', async () => {
+  const { putDraft, getDrafts } = await import('../src/agent/store.js');
+  const saved = await getDrafts();
+  const old = (n) => new Date(Date.UTC(2026, 0, 1, 0, 0, n)).toISOString();
+  const drafts = {};
+  for (let i = 0; i < 5; i++) drafts[`d_wait${i}`] = { id: `d_wait${i}`, created_at: old(i), status: 'pending_review', history: [] };
+  for (let i = 0; i < 200; i++) drafts[`d_done${i}`] = { id: `d_done${i}`, created_at: old(100 + i), status: 'submitted', history: [] };
+  await chrome.storage.local.set({ drafts });
+  await putDraft({ id: 'd_new', created_at: new Date().toISOString(), status: 'pending_review', history: [] });
+  const kept = await getDrafts();
+  assert.equal(Object.keys(kept).length, 200);
+  for (let i = 0; i < 5; i++) assert.ok(kept[`d_wait${i}`], `d_wait${i} was dropped`);
+  assert.ok(kept.d_new);
+  await chrome.storage.local.set({ drafts: saved });
+});
+
+test('Submit files only the version the hunter reviewed', async () => {
+  const { getDraft } = await import('../src/agent/store.js');
+  const id = (await dispatch('draft_report', { ...report, title: 'Reviewed version only reaches HackerOne', severity: 'low' }, null)).result.draft_id;
+  const reviewed = (await getDraft(id)).updated_at;
+  await new Promise((r) => setTimeout(r, 5));
+  await dispatch('update_draft', { draft_id: id, severity: 'critical', description: 'Changed after review. '.padEnd(120, 'y') }, { name: 'agent' });
+  const before = mutations().length;
+  await assert.rejects(drafts.submitDraft(id, { by: 'user', reviewed }), { code: 'changed' });
+  assert.equal(mutations().length, before, 'nothing reached HackerOne');
+  assert.equal((await getDraft(id)).status, 'pending_review');
+  const now = (await getDraft(id)).updated_at;
+  assert.equal((await drafts.submitDraft(id, { by: 'user', reviewed: now })).status, 'submitted');
+});
+
+test('a retried submit uploads evidence the agent replaced, not the first upload', async () => {
+  const id = (await dispatch('draft_report', { ...report, title: 'Replaced evidence reaches HackerOne on retry' }, null)).result.draft_id;
+  assert.equal((await attach(id, 'poc.png', Buffer.alloc(10, 1))).ok, true);
+  refuseCreate = true;
+  assert.equal((await drafts.submitDraft(id, { by: 'user' })).status, 'failed');
+  refuseCreate = false;
+  await dispatch('remove_attachment', { draft_id: id, attachment: 'poc.png' }, null);
+  assert.equal((await attach(id, 'poc.png', Buffer.alloc(20, 2))).ok, true);
+  const uploads = requests.filter((r) => r.kind === 'attach').length;
+  assert.equal((await drafts.submitDraft(id, { by: 'user' })).status, 'submitted');
+  const fresh = requests.filter((r) => r.kind === 'attach').slice(uploads);
+  assert.deepEqual(fresh.map((r) => r.bytes), [20], 'the replacement was uploaded');
+  assert.deepEqual(lastFiled.attachment_ids, [String(900 + requests.filter((r) => r.kind === 'attach').length)]);
+});
+
+test('auto-submit stops waiting when an announced file is refused, and the hunter is told', async () => {
+  const { getDraft } = await import('../src/agent/store.js');
+  await setSettings({ autoSubmit: ['hackerone:security'] });
+  const filedBefore = filedTitles.length;
+
+  const dup = (await dispatch('draft_report', { ...report, title: 'Auto-submit with two files of one name', attachments_pending: 2 }, null)).result.draft_id;
+  assert.equal((await attach(dup, 'poc.png', Buffer.from('from /a'))).ok, true);
+  assert.equal((await attach(dup, 'poc.png', Buffer.from('from /b'))).error.code, 'duplicate_file');
+
+  const damaged = (await dispatch('draft_report', { ...report, title: 'Auto-submit with a damaged upload', attachments_pending: 1 }, null)).result.draft_id;
+  const begin = await dispatch('attach_begin', { draft_id: damaged, name: 'x.png', size: 3, sha256: '0'.repeat(64) }, null);
+  await dispatch('attach_chunk', { upload_id: begin.result.upload_id, index: 0, data: Buffer.from('abc').toString('base64') }, null);
+  assert.equal((await dispatch('attach_end', { upload_id: begin.result.upload_id }, null)).error.code, 'bad_file');
+
+  for (const id of [dup, damaged]) {
+    const d = await getDraft(id);
+    assert.equal(d.status, 'pending_review');
+    assert.equal(d.auto_submit_after_files, undefined, `${id} still waits for files`);
+    assert.ok(d.history.some((h) => /auto-submit stopped/.test(h.event)));
+    assert.ok(notes.some((n) => n.id === `draft:${id}`), `no notification for ${id}`);
+  }
+  assert.equal(filedTitles.length, filedBefore, 'nothing was filed without its evidence');
+  await setSettings({ autoSubmit: [] });
 });
 
 test('status lists every platform with its capabilities', async () => {

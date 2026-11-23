@@ -12,6 +12,12 @@ const dist = join(root, 'dist');
 const manifest = JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'));
 const version = manifest.version;
 
+// The Chrome Web Store rejects an upload whose manifest breaks these limits.
+for (const [field, max] of Object.entries({ name: 75, description: 132 })) {
+  const length = [...(manifest[field] ?? '')].length;
+  if (length > max) throw new Error(`manifest.json ${field} is ${length} characters; the Chrome Web Store allows ${max}.`);
+}
+
 const check = process.argv.includes('--check');
 if (!check) execFileSync(process.execPath, [join(root, 'scripts/fonts.mjs')], { stdio: 'inherit' });
 

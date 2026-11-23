@@ -3,9 +3,9 @@ import { join } from 'node:path';
 
 export const HOST_NAME = 'com.principlebreach.scopedown';
 
-// Extension IDs the native host accepts. The Chromium ID comes from the "key" in the
-// extension's manifest, so an unpacked dev build and the store build share it.
-export const CHROMIUM_EXTENSION_IDS = ['gpmmeoibimhbhpcfjnhedolifmgieemi'];
+// Extension IDs the native host accepts. Chromium: the unpacked dev build (its ID comes
+// from the "key" in manifest.json), then the Chrome Web Store build.
+export const CHROMIUM_EXTENSION_IDS = ['gpmmeoibimhbhpcfjnhedolifmgieemi', 'cmckgjmbejafmpngecmdbjilcjnhcagl'];
 export const FIREFOX_EXTENSION_IDS = ['scopedown@principlebreach.com'];
 
 // SCOPEDOWN_HOME lets tests run against a throwaway directory.

@@ -115,7 +115,7 @@ test('install registers the host for browsers that exist and nothing else', asyn
   const manifest = JSON.parse(readFileSync(out.installed[0].manifest, 'utf8'));
   assert.equal(manifest.name, 'com.principlebreach.scopedown');
   assert.equal(manifest.type, 'stdio');
-  assert.deepEqual(manifest.allowed_origins, ['chrome-extension://gpmmeoibimhbhpcfjnhedolifmgieemi/', 'chrome-extension://storeidstoreidstoreidstoreidstor/']);
+  assert.deepEqual(manifest.allowed_origins, ['chrome-extension://gpmmeoibimhbhpcfjnhedolifmgieemi/', 'chrome-extension://cmckgjmbejafmpngecmdbjilcjnhcagl/', 'chrome-extension://storeidstoreidstoreidstoreidstor/']);
   assert.equal(statSync(manifest.path).mode & 0o111, 0o111, 'launcher is executable');
   const launcher = readFileSync(manifest.path, 'utf8');
   assert.match(launcher, /exec ".*node" ".*\/\.scopedown\/app\/bin\/scopedown-mcp\.js" host "\$@"/, launcher);

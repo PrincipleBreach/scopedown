@@ -8,3 +8,4 @@ fonts/LICENSE-Switzer.txt
 
 # Local agent workflows (maintenance skills that drive a hunter's logged-in browser).
 .claude/
+.DS_Store

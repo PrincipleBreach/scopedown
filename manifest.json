@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ScopeDown",
   "version": "1.0.0",
-  "description": "Turn any HackerOne or Bugcrowd program into agent-ready Markdown: scope, rewards, testing rules and the full policy. By Principle Breach.",
+  "description": "Turn HackerOne and Bugcrowd programs into agent-ready Markdown, and let your AI agents work through your logged-in browser over MCP.",
   "author": "Principle Breach",
   "homepage_url": "https://principlebreach.com/?utm_source=scopedown&utm_medium=referral&utm_campaign=extension-details",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA22EvIdkUlSU0Byupq+spE2Iy/U0CXyIF4wtfDia1j0avV1Ago4MBxiH4KpFGtdHL5LLlTqjfnuiHYfZCypW82o/b1Z/CzQndPW050nR4P9jx2UxpyoU+zgblA1t3OyToH3z4jI+PaibqQ/KI9ZRJbOyrnPmf86k3oIEEzI2RJ4gxgAfWpltBDwiD6oUr9aBDq+iqNH99JrY1K7hqAsKVJ98ViizwXaqgwTpRTHS7VEtMWMUSKQohkp2dWHJy+nA4VVEmi6xbQFDTHvUGMQo74FdVYouYKPBlAeyVqQYIIkjiOHDiHKeWMBiz9nwg5UNGi8nK18IUcGQthwXnehSpMQIDAQAB",

@@ -74,15 +74,15 @@ export function createOps({ build }) {
     async status() {
       const s = await getSettings();
       const drafts = Object.values(await getDrafts());
-      const accounts = {};
-      for (const a of ADAPTERS) {
-        if (s.platforms[a.id] === false) { accounts[a.id] = { allowed: false }; continue; }
+      // Each platform answers on its own clock, so ask them together.
+      const accounts = Object.fromEntries(await Promise.all(ADAPTERS.map(async (a) => {
+        if (s.platforms[a.id] === false) return [a.id, { allowed: false }];
         try {
-          accounts[a.id] = { allowed: true, ...(await a.agent.account()) };
+          return [a.id, { allowed: true, ...(await a.agent.account()) }];
         } catch (e) {
-          accounts[a.id] = { allowed: true, signed_in: null, error: e.message };
+          return [a.id, { allowed: true, signed_in: null, error: e.message }];
         }
-      }
+      })));
       return {
         extension: ext().runtime.getManifest().version,
         platforms: ADAPTERS.map(capabilities),

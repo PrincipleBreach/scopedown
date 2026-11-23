@@ -54,6 +54,24 @@ function answerGraphql(query, variables) {
   return {};
 }
 
+// Bugcrowd's JSON lists, as the site serves them. Like Bugcrowd, submissions only honour filters
+// in array form (offset[]=, sort[]=, draft[]=); a bare offset= is ignored. Engagements page by 24.
+const bcSubmissions = [];
+const bcEngagements = { invite_only: [], open: [] };
+function bugcrowdJson(path) {
+  const url = new URL(path, 'https://bugcrowd.com');
+  if (url.pathname === '/submissions.json') {
+    const offset = Number(url.searchParams.get('offset[]') || 0);
+    const draft = url.searchParams.get('draft[]');
+    const list = bcSubmissions.filter((x) => draft === null || String(Boolean(x.draft)) === draft);
+    return { submissions: list.slice(offset, offset + 25), meta: { totalHits: list.length } };
+  }
+  const page = Number(url.searchParams.get('page') || 1);
+  const search = (url.searchParams.get('search') || '').toLowerCase();
+  const list = (bcEngagements[url.searchParams.get('access')] || []).filter((e) => !search || e.name.toLowerCase().includes(search));
+  return { engagements: list.slice((page - 1) * 24, page * 24), paginationMeta: { totalCount: list.length, limit: 24 } };
+}
+
 globalThis.chrome = {
   runtime: { id: 'test', getManifest: () => ({ version: '0.3.0' }), getURL: (p) => `chrome-extension://test/${p}` },
   permissions: { contains: async () => true },
@@ -70,6 +88,8 @@ globalThis.chrome = {
         requests.push({ kind: 'bc-program', code: args[0] });
         return [{ result: structuredClone(tesla) }];
       }
+      if (func.name === 'fetchInPage' && args[0] === 'refused') return [{ result: { error: 'HackerOne API returned HTTP 403.' } }];
+      if (func.name === 'fetchInPage' && args[0] === 'ghost') return [{ result: { error: 'No program "ghost" is visible to this account.', reason: 'not_found' } }];
       if (func.name === 'fetchInPage') {
         requests.push({ kind: 'program', handle: args[0] });
         return [{ result: structuredClone({ team: security.team, warnings: [] }) }];
@@ -80,7 +100,9 @@ globalThis.chrome = {
       }
       if (func.name === 'pageRequest') {
         const req = args[0];
-        if (req.path.startsWith('/submissions.json')) return [{ result: { status: 200, url: 'https://bugcrowd.com/submissions.json', body: { submissions: [], meta: { totalHits: 0 } } } }];
+        if (req.path.startsWith('/submissions.json') || req.path.startsWith('/engagements.json')) {
+          return [{ result: { status: 200, url: `https://bugcrowd.com${req.path}`, body: bugcrowdJson(req.path) } }];
+        }
         const query = req.json?.query || '';
         requests.push({ kind: 'request', path: req.path, query, variables: req.json?.variables });
         return [{ result: { status: 200, url: `https://hackerone.com${req.path}`, body: { data: answerGraphql(query, req.json?.variables) } } }];
@@ -138,6 +160,13 @@ const report = {
   impact: 'Script runs in the triager session and can read reports.',
 };
 const mutations = () => requests.filter((r) => /^\s*mutation\b/.test(r.query));
+
+test('a program the platform refuses is a platform error, not a missing program', async () => {
+  const refused = (await dispatch('get_program', { platform: 'hackerone', handle: 'refused' })).error;
+  assert.equal(refused.code, 'platform');
+  assert.match(refused.message, /HTTP 403/);
+  assert.equal((await dispatch('get_program', { platform: 'hackerone', handle: 'ghost' })).error.code, 'not_found');
+});
 
 test('unknown operations and malformed parameters are refused', async () => {
   assert.equal((await dispatch('run_graphql', { query: 'mutation { deleteEverything }' })).error.code, 'unknown_op');
@@ -402,6 +431,41 @@ test('Bugcrowd: VRT entries by full path with priority, target ids, and the form
   assert.equal(filled.status, 'handed_off', 'filling the form does not submit anything');
   const pub = await dispatch('get_draft', { draft_id: d.result.draft_id });
   assert.deepEqual(pub.result.form_prefill.missed, ['URL: no URL field']);
+});
+
+async function pageThrough(op, args, key) {
+  const seen = [];
+  let cursor;
+  for (let i = 0; i < 50; i++) {
+    const out = await dispatch(op, { platform: 'bugcrowd', ...args, ...(cursor ? { cursor } : {}) });
+    assert.equal(out.error, undefined, JSON.stringify(out.error));
+    const page = out.result.bugcrowd;
+    seen.push(...page[key]);
+    cursor = page.next_cursor;
+    if (!cursor) return { seen, last: page };
+  }
+  throw new Error('paging never ended');
+}
+
+test('Bugcrowd: your submissions page in order, with no gaps or repeats, drafts excluded', async () => {
+  bcSubmissions.length = 0;
+  for (let i = 1; i <= 60; i++) bcSubmissions.push({ reference_number: `r-${i}`, caption: `Finding ${i}`, substate: 'triaged', engagement_name: i % 2 ? 'Tesla' : 'Okta', submission_url: `/submissions/r-${i}` });
+  bcSubmissions.splice(3, 0, { reference_number: 'draft-1', caption: 'Unsent', draft: true });
+  const { seen, last } = await pageThrough('list_my_reports', { limit: 7 }, 'reports');
+  assert.deepEqual(seen.map((r) => r.id), Array.from({ length: 60 }, (_, i) => `r-${i + 1}`));
+  assert.equal(last.total, 60);
+  bcSubmissions.length = 0;
+});
+
+test('Bugcrowd: program search runs on the server and pages without gaps', async () => {
+  bcEngagements.invite_only = [{ name: 'Alpha Private', briefUrl: '/engagements/alpha-private', isPrivate: true }, { name: 'Beta Private', briefUrl: '/engagements/beta-private', isPrivate: true }];
+  bcEngagements.open = Array.from({ length: 70 }, (_, i) => ({ name: `${i % 2 ? 'Alpha' : 'Gamma'} Public ${i}`, briefUrl: `/engagements/public-${i}`, isPrivate: false }));
+  const { seen, last } = await pageThrough('list_programs', { query: 'alpha', limit: 5 }, 'programs');
+  assert.deepEqual(seen.map((p) => p.handle), ['alpha-private', ...bcEngagements.open.filter((e) => e.name.startsWith('Alpha')).map((e) => e.briefUrl.split('/').pop())]);
+  assert.equal(last.total, 36);
+  const invites = await pageThrough('list_programs', { limit: 1 }, 'programs');
+  assert.deepEqual(invites.seen.map((p) => p.handle), ['alpha-private', 'beta-private']);
+  bcEngagements.invite_only = []; bcEngagements.open = [];
 });
 
 test('status lists every platform with its capabilities', async () => {

@@ -22,7 +22,7 @@ async function getJson(path) {
 export async function account() {
   return cached('bc:me', 60_000, async () => {
     try {
-      const s = await getJson('/submissions.json?offset=0&sort=submitted-desc');
+      const s = await getJson(submissionsPath(0));
       return { signed_in: true, username: s.submissions?.[0]?.username || null };
     } catch (e) {
       if (e.code === 'signed_out') return { signed_in: false, username: null };
@@ -34,7 +34,8 @@ export async function account() {
 export async function program(code) {
   return cached(`bc:program:${code}`, 5 * 60_000, async () => {
     const raw = await runInPlatform(ORIGIN, bugcrowd.fetchInPage, bugcrowd.inPageArgs({ code }));
-    if (raw?.error) throw new RunnerError('not_found', raw.error);
+    // Only a missing program is not_found; a refused or failed request is the platform's error.
+    if (raw?.error) throw new RunnerError(raw.reason || 'platform', raw.error);
     return bugcrowd.normalize(raw, { fetchedAt: new Date().toISOString() });
   });
 }
@@ -48,31 +49,44 @@ export async function form(code) {
 }
 
 export async function listPrograms({ privateOnly, query, limit = 25, cursor }) {
-  const page = Number(cursor) || 1;
-  const want = String(query || '').toLowerCase();
+  const want = String(query || '').trim();
+  // Accepted private invitations first; public engagements only when searching. Bugcrowd searches on
+  // its side, so a search covers every engagement, not one page of them.
+  const lists = privateOnly || !want ? ['invite_only'] : ['invite_only', 'open'];
+  const at = /^(\d+):(\d+)$/.exec(cursor || '0:0');
+  if (!at || Number(at[1]) >= lists.length) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
+  const [list, offset] = [Number(at[1]), Number(at[2])];
+  const page = (access, n) => getJson(`/engagements.json?${new URLSearchParams({ category: 'bug_bounty', page: String(n), access, ...(want ? { search: want } : {}) })}`);
+  const row = (e) => ({
+    platform: 'bugcrowd',
+    handle: e.briefUrl?.split('/').pop(),
+    name: e.name,
+    visibility: e.isPrivate ? 'private' : 'public',
+    rewards: e.rewardSummary?.summary || null,
+    url: `${BC}${e.briefUrl}`,
+  });
+
+  // The cursor is "<list>:<offset>"; Bugcrowd pages by 24, so the offset picks the page and the row in it.
   const out = [];
   let total = 0;
   let next = null;
-  // Accepted private invitations first; public engagements only when searching.
-  const access = privateOnly || !want ? ['invite_only'] : ['invite_only', 'open'];
-  for (const a of access) {
-    const body = await getJson(`/engagements.json?category=bug_bounty&page=${page}&access=${a}`);
-    total += body.paginationMeta?.totalCount || 0;
-    if ((body.engagements || []).length && page * (body.paginationMeta?.limit || 24) < (body.paginationMeta?.totalCount || 0)) next = String(page + 1);
-    for (const e of body.engagements || []) {
-      const code = e.briefUrl?.split('/').pop();
-      if (want && !`${e.name} ${code}`.toLowerCase().includes(want)) continue;
-      out.push({
-        platform: 'bugcrowd',
-        handle: code,
-        name: e.name,
-        visibility: e.isPrivate ? 'private' : 'public',
-        rewards: e.rewardSummary?.summary || null,
-        url: `${BC}${e.briefUrl}`,
-      });
+  for (let i = 0; i < lists.length; i++) {
+    let pos = i === list ? offset : 0;
+    let body = await page(lists[i], 1 + Math.floor(pos / 24));
+    const size = body.paginationMeta?.limit || 24;
+    const count = body.paginationMeta?.totalCount ?? (body.engagements || []).length;
+    total += count;
+    if (i < list || next !== null || out.length === limit) continue;
+    while (out.length < limit && pos < count) {
+      const rows = (body.engagements || []).slice(pos % size, pos % size + (limit - out.length));
+      if (!rows.length) break;
+      out.push(...rows.map(row));
+      pos += rows.length;
+      if (out.length < limit && pos < count) body = await page(lists[i], 1 + Math.floor(pos / size));
     }
+    if (out.length === limit) next = pos < count ? `${i}:${pos}` : (i + 1 < lists.length ? `${i + 1}:0` : null);
   }
-  return { programs: out.slice(0, limit), total, next_cursor: next };
+  return { programs: out, total, next_cursor: next };
 }
 
 // VRT entries as flat, searchable rows. Bugcrowd names an entry by its full dotted path
@@ -127,17 +141,22 @@ export function quota(f) {
   };
 }
 
+// Bugcrowd's own app sends every list filter in array form (offset[]=, sort[]=, draft[]=) and
+// ignores the bare form, so these do too. Drafts are not submissions yet.
+const submissionsPath = (offset) => `/submissions.json?offset[]=${offset}&sort[]=submitted-desc&draft[]=false`;
+
 export async function myReports({ handle, limit = 25, cursor }) {
-  // Bugcrowd pages by offset, 25 at a time; a filter by program needs a scan, so it reads up to 4 pages.
-  const start = Number(cursor) || 0;
+  // Bugcrowd pages by offset, 25 at a time. The cursor is the offset of the next unread
+  // submission, so a page smaller than 25 skips nothing. A filter by program reads up to 4 pages.
+  let offset = Number(cursor) || 0;
   const rows = [];
-  let offset = start;
   let total = 0;
-  for (let page = 0; page < (handle ? 4 : 1) && rows.length < limit; page++) {
-    const body = await getJson(`/submissions.json?offset=${offset}&sort=submitted-desc`);
+  for (let read = 0; read < (handle ? 4 : 1 + Math.ceil(limit / 25)) && rows.length < limit; read++) {
+    const body = await getJson(submissionsPath(offset));
     total = body.meta?.totalHits ?? 0;
     const batch = body.submissions || [];
     for (const s of batch) {
+      offset++;
       if (handle && ![s.submission_url, s.engagement_name, s.program_name].some((v) => String(v || '').toLowerCase().includes(handle.toLowerCase()))) continue;
       rows.push({
         platform: 'bugcrowd',
@@ -148,11 +167,11 @@ export async function myReports({ handle, limit = 25, cursor }) {
         created_at: s.submitted_at || s.created_at,
         url: s.submission_url ? `${BC}${s.submission_url}` : null,
       });
+      if (rows.length === limit) break;
     }
-    offset += batch.length;
     if (!batch.length || offset >= total) break;
   }
-  return { total, reports: rows.slice(0, limit), next_cursor: offset < total ? String(offset) : null };
+  return { total, reports: rows, next_cursor: offset < total ? String(offset) : null };
 }
 
 function withPriority(row) {
@@ -161,7 +180,7 @@ function withPriority(row) {
 
 // A submission the hunter filed by hand from a handed-off draft, matched by its exact title.
 export async function findFiled(draft, since) {
-  const body = await getJson('/submissions.json?offset=0&sort=submitted-desc');
+  const body = await getJson(submissionsPath(0));
   const hit = (body.submissions || []).find((s) => (s.caption || s.title) === draft.title && (!since || (s.submitted_at || s.created_at || '') >= since));
   return hit ? { id: hit.reference_number, url: hit.submission_url ? `${BC}${hit.submission_url}` : null } : null;
 }

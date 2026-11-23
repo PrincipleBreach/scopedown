@@ -93,7 +93,7 @@ export function createServer(bridge = new Bridge()) {
 
   readTool('list_programs', {
     title: 'List programs',
-    description: 'Lists programs the user can submit reports to. private_only shows private invitations; query searches by name or handle. Each platform returns its own next_cursor; to page, pass platform with that cursor.',
+    description: 'Lists programs the user can submit reports to. private_only shows private invitations; query searches by name or handle. Each platform returns its own next_cursor; to page, pass platform with that cursor until it is null. A page can hold fewer than limit programs and still have a next_cursor.',
     inputSchema: {
       platform: platform.optional().describe('Limit to one platform. Default: both.'),
       private_only: z.boolean().optional().describe('Only private programs the user was invited to.'),
@@ -142,7 +142,7 @@ export function createServer(bridge = new Bridge()) {
 
   readTool('get_my_report', {
     title: 'Get one of my reports',
-    description: 'Returns one of the user\'s reports with its state, severity and the comment thread, so you can see what triage asked for. Long threads page with thread_cursor. Supported where status shows report_threads (HackerOne).',
+    description: 'Returns one of the user\'s reports with its state, severity and the comment thread, so you can see what triage asked for. Long threads page with thread_cursor. A disclosed report by someone else can be read too: check yours, which is true only for the user\'s own reports. Supported where status shows report_threads (HackerOne).',
     inputSchema: {
       platform,
       id: z.string().regex(/^[\w-]{1,40}$/).describe('Report id, as in hackerone.com/reports/<id>.'),

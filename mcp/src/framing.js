@@ -1,3 +1,5 @@
+import { StringDecoder } from 'node:string_decoder';
+
 // Wire formats.
 // Native messaging (browser <-> host): each message is a 32-bit length in native byte order
 // (little-endian on every platform browsers ship on) followed by UTF-8 JSON.
@@ -36,11 +38,13 @@ export function encodeLine(message) {
   return `${JSON.stringify(message)}\n`;
 }
 
-// Feeds chunks in, calls onMessage for every complete JSON line.
+// Feeds chunks in, calls onMessage for every complete JSON line. A read can end inside a
+// multi-byte character, so the decoder carries those bytes over to the next chunk.
 export function lineDecoder(onMessage, onError = () => {}) {
+  const utf8 = new StringDecoder('utf8');
   let pending = '';
   return (chunk) => {
-    pending += chunk.toString('utf8');
+    pending += typeof chunk === 'string' ? chunk : utf8.write(chunk);
     let newline;
     while ((newline = pending.indexOf('\n')) >= 0) {
       const line = pending.slice(0, newline).trim();

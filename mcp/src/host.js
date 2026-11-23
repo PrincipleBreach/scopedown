@@ -10,6 +10,14 @@ import { join } from 'node:path';
 import { encodeNative, nativeDecoder, encodeLine, lineDecoder } from './framing.js';
 import { scopedownHome, socketsDir, socketPath, logFile } from './paths.js';
 
+// The sockets folder holds the Unix sockets, and on every OS the marker files that tell the
+// MCP server where each host listens (on Windows the markers are the only way to find a pipe).
+export function prepareDirs(os = platform()) {
+  mkdirSync(scopedownHome(), { recursive: true, mode: 0o700 });
+  mkdirSync(socketsDir(), { recursive: true, mode: 0o700 });
+  if (os !== 'win32') chmodSync(socketsDir(), 0o700);
+}
+
 export function runHost({ stdin = process.stdin, stdout = process.stdout } = {}) {
   const log = (msg) => {
     try {
@@ -17,11 +25,7 @@ export function runHost({ stdin = process.stdin, stdout = process.stdout } = {})
     } catch { /* logging is best effort */ }
   };
 
-  mkdirSync(scopedownHome(), { recursive: true, mode: 0o700 });
-  if (platform() !== 'win32') {
-    mkdirSync(socketsDir(), { recursive: true, mode: 0o700 });
-    chmodSync(socketsDir(), 0o700);
-  }
+  prepareDirs();
 
   const name = `host-${process.pid}`;
   const path = socketPath(name);

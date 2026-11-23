@@ -15,7 +15,9 @@ async function getJson(path) {
   const out = await runInPlatform(ORIGIN, pageRequest, [{ path, accept: 'application/json' }]);
   if (out?.error) throw new RunnerError(out.error.code, out.error.message);
   if (out.status === 401 || out.status === 403 || /\/user\/sign_in/.test(out.url || '')) throw new RunnerError('signed_out', 'Sign in to Bugcrowd in this browser.');
-  if (typeof out.body !== 'object') throw new RunnerError('platform', `Bugcrowd returned HTTP ${out.status}.`);
+  if (out.status === 429) throw new RunnerError('rate_limited', 'Bugcrowd is rate limiting this account. Wait a minute and try again.');
+  // An error page can still be JSON; it must not read as an empty list.
+  if (!(out.status >= 200 && out.status < 300) || typeof out.body !== 'object') throw new RunnerError('platform', `Bugcrowd returned HTTP ${out.status}.`);
   return out.body;
 }
 
@@ -148,22 +150,28 @@ const submissionsPath = (offset) => `/submissions.json?offset[]=${offset}&sort[]
 export async function myReports({ handle, limit = 25, cursor }) {
   // Bugcrowd pages by offset, 25 at a time. The cursor is the offset of the next unread
   // submission, so a page smaller than 25 skips nothing. A filter by program reads up to 4 pages.
-  let offset = Number(cursor) || 0;
+  if (cursor && !/^\d+$/.test(cursor)) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
+  let offset = Number(cursor || 0);
+  const want = handle?.toLowerCase();
+  // The engagement's code, as in bugcrowd.com/engagements/<code>. Bugcrowd leaves it out for
+  // engagements it does not disclose, so the path is the fallback.
+  const codeOf = (s) => String(s.engagement_code || s.engagement_path?.split('/').filter(Boolean).pop() || '').toLowerCase();
   const rows = [];
   let total = 0;
-  for (let read = 0; read < (handle ? 4 : 1 + Math.ceil(limit / 25)) && rows.length < limit; read++) {
+  for (let read = 0; read < (want ? 4 : 1 + Math.ceil(limit / 25)) && rows.length < limit; read++) {
     const body = await getJson(submissionsPath(offset));
     total = body.meta?.totalHits ?? 0;
     const batch = body.submissions || [];
     for (const s of batch) {
       offset++;
-      if (handle && ![s.submission_url, s.engagement_name, s.program_name].some((v) => String(v || '').toLowerCase().includes(handle.toLowerCase()))) continue;
+      if (want && codeOf(s) !== want) continue;
       rows.push({
         platform: 'bugcrowd',
         id: s.reference_number,
         title: s.caption || s.title,
         state: s.substate,
-        program: s.engagement_name || s.program_name,
+        program: codeOf(s) || null,
+        program_name: s.engagement_name || s.program_name || null,
         created_at: s.submitted_at || s.created_at,
         url: s.submission_url ? `${BC}${s.submission_url}` : null,
       });
@@ -171,7 +179,13 @@ export async function myReports({ handle, limit = 25, cursor }) {
     }
     if (!batch.length || offset >= total) break;
   }
-  return { total, reports: rows, next_cursor: offset < total ? String(offset) : null };
+  return {
+    // Filtered here, so Bugcrowd's count of all submissions would mislead.
+    total: want ? undefined : total,
+    reports: rows,
+    next_cursor: offset < total ? String(offset) : null,
+    note: want ? 'Filtered by program on this side, reading up to 100 submissions per call. Pass next_cursor until it is null.' : undefined,
+  };
 }
 
 function withPriority(row) {

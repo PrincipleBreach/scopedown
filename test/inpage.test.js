@@ -5,6 +5,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import * as hackerone from '../src/platforms/hackerone/program.js';
 import { pageRequest } from '../src/agent/page.js';
+import * as bugcrowd from '../src/platforms/bugcrowd/program.js';
 
 const TOKEN = 'tok-current';
 let shellLoads;
@@ -59,4 +60,27 @@ test('pageRequest replaces a stale token once and retries', async () => {
   const out = await pageRequest({ path: '/graphql', method: 'POST', json: { query: '{ me { username } }' }, csrf: true, csrfFrom: '/hacktivity/overview' });
   assert.equal(out.status, 200, JSON.stringify(out));
   assert.equal(out.body.data.me.username, 'hunter');
+});
+
+test('a Bugcrowd engagement that does not exist is not_found, not a platform error', async () => {
+  globalThis.location = { origin: 'https://bugcrowd.com', pathname: '/robots.txt' };
+  globalThis.fetch = async () => new Response('Not Found', { status: 404, headers: { 'content-type': 'text/html' } });
+  const out = await bugcrowd.fetchInPage('no-such-engagement');
+  assert.equal(out.reason, 'not_found', JSON.stringify(out));
+  assert.match(out.error, /no-such-engagement/);
+});
+
+test('a Bugcrowd tab on a longer engagement name is not read as the one asked for', async () => {
+  const requests = [];
+  globalThis.location = { origin: 'https://bugcrowd.com', pathname: '/engagements/tesla-mbo' };
+  globalThis.document = { querySelectorAll: () => [{ getAttribute: () => JSON.stringify({ engagementBriefApi: { getBriefVersionDocument: '/engagements/tesla-mbo/brief_versions/v1' } }) }] };
+  globalThis.DOMParser = class { parseFromString() { return { querySelectorAll: () => [{ getAttribute: () => JSON.stringify({ engagementBriefApi: { getBriefVersionDocument: '/engagements/tesla/brief_versions/v9' } }) }] }; } };
+  globalThis.fetch = async (path) => {
+    requests.push(String(path));
+    if (String(path).endsWith('.json')) return Response.json({ data: { brief: { name: String(path).includes('tesla-mbo') ? 'Tesla MBO' : 'Tesla' } } });
+    return new Response('<html></html>', { headers: { 'content-type': 'text/html' } });
+  };
+  const out = await bugcrowd.fetchInPage('tesla');
+  assert.equal(out.error, undefined, out.error);
+  assert.equal(out.brief.data.brief.name, 'Tesla', `requests: ${requests.join(', ')}`);
 });

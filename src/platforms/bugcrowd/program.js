@@ -30,6 +30,9 @@ export async function fetchInPage(code) {
       if (res.status === 401 || res.status === 403) {
         throw new Error('Bugcrowd refused access. Sign in, and check you are invited to this engagement.');
       }
+      if (res.status === 404) {
+        throw Object.assign(new Error(`There is no Bugcrowd engagement "${code}".`), { reason: 'not_found' });
+      }
       if (!res.ok) throw new Error(`Bugcrowd returned HTTP ${res.status}.`);
       return res;
     };
@@ -45,7 +48,9 @@ export async function fetchInPage(code) {
     };
 
     const enginePath = `/engagements/${encodeURIComponent(code)}`;
-    let briefPath = location.pathname.startsWith(enginePath) ? findBriefPath(document) : null;
+    // Only this engagement's own pages: /engagements/tesla must not match /engagements/tesla-mbo.
+    const onEngagement = location.pathname === enginePath || location.pathname.startsWith(`${enginePath}/`);
+    let briefPath = onEngagement ? findBriefPath(document) : null;
     if (!briefPath) {
       const html = await (await get(enginePath, 'text/html')).text();
       briefPath = findBriefPath(new DOMParser().parseFromString(html, 'text/html'));
@@ -59,7 +64,7 @@ export async function fetchInPage(code) {
     if (!brief?.data?.brief) return { error: 'Bugcrowd sent an unexpected response for the brief.' };
     return { code, brief };
   } catch (e) {
-    return { error: String(e?.message || e) };
+    return { error: String(e?.message || e), reason: e?.reason };
   }
 }
 

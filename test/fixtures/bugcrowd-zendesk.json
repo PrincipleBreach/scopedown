@@ -1,0 +1,742 @@
+{
+ "code": "zendesk",
+ "brief": {
+  "id": "d7928c36-fac5-4045-8d00-dd2a8638e21c",
+  "engagementId": "00472299-3039-4471-af31-f5c2962316c1",
+  "data": {
+   "brief": {
+    "id": "2c7233f1-5e71-460f-aa43-1bce2f603215",
+    "name": "Zendesk Managed Bug Bounty Engagement",
+    "tagline": "Zendesk aims to keep its Services safe for everyone and the security of our products & data is of utmost priority.",
+    "description": "<p>Zendesk is the complete customer service platform, powered by AI. Equip your agents with powerful AI tools and workflows that boost efficiency and elevate customer experiences across every channel.</p>\n\n<h1>Ratings/Rewards and Bounty Rules:</h1>\n\n<p>For the initial prioritisation/rating of findings, this program will use the <a href=\"https://bugcrowd.com/vulnerability-rating-taxonomy\" rel=\"nofollow noreferrer\" target=\"_blank\">BugCrowd Vulnerability Rating Taxonomy</a>. However, it is important to note that in some cases a vulnerability priority will be modified due to its likelihood or impact. In any instance where an issue is downgraded, a full, detailed explanation will be provided to the researcher - along with the opportunity to appeal, and make a case for a higher priority.</p>\n\n<hr>\n\n<h2>Access</h2>\n\n<p>The targets within scope are publicly accessible. </p>\n\n<h2>Credentials</h2>\n\n<ul>\n<li><strong>All research must be conducted using your own Zendesk instance which you can sign up for <a href=\"https://www.zendesk.com/register/\" rel=\"nofollow noreferrer\" target=\"_blank\">here</a>.</strong></li>\n<li>When asked for an email, please provide your <strong>@bugcrowdninja.com email address.</strong>\n</li>\n<li>When asked for your <strong>company name</strong>, please use the following: <strong>bb-&lt;bugcrowd-username&gt;</strong>\n</li>\n<li>In cases where you need to create additional accounts or need to test beyond the trial period, please increment your company name with an appropriate integer or date-based string</li>\n<li>Your account should end up with a domain name that looks like <strong>bb-acidburn-01.zendesk.com</strong>\n</li>\n</ul>",
+    "industryTagId": "02370343-bf13-4661-a7a2-caa1c1076ad1",
+    "targetsOverview": "<p>Testing is only authorized on the targets listed as in scope. Any domain/property of Zendesk not listed in the targets section is out of scope. This includes any/all subdomains not listed above. If you happen to identify a security vulnerability on a target that is not in scope, but it demonstrably belongs to Zendesk, you can report it to this engagement. However, be aware that it is ineligible for rewards or points-based compensation.</p>\n\n<hr>\n\n<h2>To Qualify For a Bounty You Must:</h2>\n\n<ul>\n<li>Not be employed by a current or prospective customer of ours, or otherwise be acting in a professional capacity on behalf of a customer of ours \n\n<ul>\n<li>You may submit a ticket per our <a href=\"https://www.zendesk.com/au/company/policies-and-guidelines/responsible-disclosure-policy/\" rel=\"nofollow noreferrer\" target=\"_blank\">Responsible disclosure policy</a>\n</li>\n</ul>\n</li>\n<li>Report a qualifying vulnerability that is in the scope of our program</li>\n<li>Be the first person to report the vulnerability</li>\n<li>Follow this guidelines for creating an account</li>\n<li>Only test against your own accounts and data</li>\n<li>Be reasonable with automated scanning methods so as to not degrade services</li>\n</ul>\n\n<h2>Report Guidelines</h2>\n\n<ul>\n<li>Reports must contain a clear explanation of the issue and the security impact along with detailed steps to reproduce it. If the issue cannot be reliably reproduced based on your report, it may be considered ineligible for a reward</li>\n<li>Reports must contain the trial account used to test</li>\n<li>Reports must contain the URL or API path where the vulnerability was identified</li>\n<li>Do not submit more than one vulnerability per report. In cases where demonstrating impact requires chaining multiple vulnerabilities together, those can be included in the same report as long as the linkage is clearly explained</li>\n<li>We do not accept reports that contain low-effort or AI-generated content. Submissions must demonstrate original analysis, clear understanding of the issue, and actionable detail. Reports lacking meaningful human input will be rejected</li>\n</ul>\n\n<hr>\n\n<h2>N-day/Third party 0-day Policy</h2>\n\n<p>When N-Day bugs are released to the public, we will consider these as in scope after 30 days has gone by<br>\ne.g: N-day released on 01/01/2025, we would consider it in-scope on 01/31/2025</p>\n\n<h2>Leaked Credentials</h2>\n\n<p>Submissions related to leaked or exposed employee credentials (e.g., dark web forums, credential dumps) will be reviewed on a case-by-case basis and may qualify for points-based compensation only. The use of any leaked credentials during testing is strictly prohibited and may result in disqualification from the bounty program.</p>\n\n<h2>Zendesk Shared Responsibility Model</h2>\n\n<p>Unless otherwise stated in our targets or scope, Zendesk will not award bounties related to misconfigurations or vulnerabilities that originate from the responsibilities of “The Subscriber” per our shared responsibility model. You can find the definition of our shared responsibility model here:</p>\n\n<ul>\n<li>\n<a href=\"https://support.zendesk.com/hc/en-us/articles/4408833510938-The-Zendesk-Shared-Responsibility-Model\" rel=\"nofollow noreferrer\" target=\"_blank\">The Zendesk Shared Responsibility Model</a> </li>\n</ul>\n\n<hr>\n\n<h2>Developer Documentation</h2>\n\n<p>Please review <a href=\"https://developer.zendesk.com/\" rel=\"nofollow noreferrer\" target=\"_blank\">Developer documentation</a> and, if the issue may impact any APIs, check the <a href=\"https://developer.zendesk.com/api-reference/\" rel=\"nofollow noreferrer\" target=\"_blank\">API Reference</a> first.</p>\n\n<hr>\n\n<h2>Out of Scope</h2>\n\n<ul>\n<li><a href=\"https://bugcrowd.com/vulnerability-rating-taxonomy\" rel=\"nofollow noreferrer\" target=\"_blank\">P5 vulnerabilities</a></li>\n<li>Availability/volumetric testing e.g.:\n\n<ul>\n<li>DoS/DDoS/Network DoS</li>\n<li>Rate limiting bypass attempts</li>\n<li>Email bombing or flooding</li>\n</ul>\n</li>\n<li>ALL forms of Social Engineering</li>\n<li>SPF, DKIM, DMARC issues related to how we handle emails</li>\n<li>Physical vulnerabilities or reports related to our offices</li>\n<li>Reports related to individual employees of Zendesk or compromised account reports from 3rd party data breaches</li>\n<li>Subscription and Entitlement Enforcement\n\n<ul>\n<li>Bypasses of subscription limits, feature gates, trial restrictions, usage quotas, billing controls, or self-service plan changes that affect only the reporter’s own account are out of scope.</li>\n</ul>\n</li>\n</ul>\n\n<h2>Other Rules</h2>\n\n<p>In no event are you permitted to access, download or modify data residing in any other Account, or one that is not registered to you. We will not honour any issues which result from testing our customers.</p>\n\n<p>You are also prohibited from:</p>\n\n<ul>\n<li>You are prohibited from attempting to social engineer Zendesk staff including contacting Zendesk via our Support channels without identifying yourself as a security researcher. </li>\n<li>You are prohibited from attempting to upgrade your trial account to a paid account without payment or otherwise attempting to circumvent charges or fees. </li>\n<li>You are prohibited from executing or attempting to execute a Denial of Service attack. </li>\n<li>Knowingly posting, transmitting, uploading, linking to, sending or storing any malicious or illegal software or files. </li>\n<li>Testing in a manner that would result in the sending of unsolicited or unauthorised junk mail, spam, pyramid schemes or other forms of duplicative or unsolicited messages. </li>\n<li>Attempting to rename an account or testing of the account name change functionality.</li>\n</ul>\n\n<hr>\n\n<h2>Safe Harbor</h2>\n\n<p><strong>When conducting vulnerability research according to this policy, we consider this research to be:</strong></p>\n\n<ul>\n<li>Authorized in accordance with the Computer Fraud and Abuse Act (CFAA) (and/or similar state laws), and we will not initiate or support legal action against you for accidental, good faith violations of this policy;</li>\n<li>Exempt from the Digital Millennium Copyright Act (DMCA), and we will not bring a claim against you for circumvention of technology controls;</li>\n<li>Exempt from restrictions in our Terms &amp; Conditions that would interfere with conducting security research, and we waive those restrictions on a limited basis for work done under this policy; and</li>\n<li>Lawful, helpful to the overall security of the Internet, and conducted in good faith.</li>\n<li>You are expected, as always, to comply with all applicable laws.</li>\n</ul>\n\n<p><em>If at any time you have concerns or are uncertain whether your security research is consistent with this policy, please inquire via our <a href=\"https://bugcrowd-support.freshdesk.com/\" rel=\"nofollow noreferrer\" target=\"_blank\">Bugcrowd Support Portal</a> before going any further.</em></p>",
+    "safeHarborStatus": {
+     "status": "full",
+     "label": "Safe harbor",
+     "description": "This engagement is fully committed to providing safe harbor for good-faith security research."
+    },
+    "collaborationEnabled": true,
+    "additionalInformation": ""
+   },
+   "scope": [
+    {
+     "id": "069d42c2-b494-4a36-b12a-4feb74e20d23",
+     "name": "Zendesk AI",
+     "targets": [
+      {
+       "id": "1c4eb16e-7604-46f2-a14d-2a8d38fc13cd",
+       "uri": null,
+       "name": "Zendesk AI",
+       "category": "website",
+       "ipAddress": "https://{subdomain}.zendesk.com/",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "9243afd6-20be-4f64-9507-2b297be5ebf7",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "1f2fc0ed-8b79-47a2-a6dc-564a2d9d0828",
+         "name": "API Testing",
+         "targetId": "1c4eb16e-7604-46f2-a14d-2a8d38fc13cd"
+        },
+        {
+         "id": "785c5b22-9fbd-4f54-83f0-336e4e417b17",
+         "name": "Large Language Model",
+         "targetId": "1c4eb16e-7604-46f2-a14d-2a8d38fc13cd"
+        },
+        {
+         "id": "ad43847d-d5ec-4d65-a1f1-8f20ec7e9238",
+         "name": "Penetration Testing",
+         "targetId": "1c4eb16e-7604-46f2-a14d-2a8d38fc13cd"
+        },
+        {
+         "id": "bc744424-2ab8-48c8-b938-c6d6abcdf500",
+         "name": "Website Testing",
+         "targetId": "1c4eb16e-7604-46f2-a14d-2a8d38fc13cd"
+        },
+        {
+         "id": "d14cf1dd-8069-48ef-9a2b-779bf3a066f9",
+         "name": "Artificial Intelligence",
+         "targetId": "1c4eb16e-7604-46f2-a14d-2a8d38fc13cd"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 0,
+     "description": null,
+     "rewardRange": {
+      "id": "a7722bec-f63e-4a4e-bbfd-40c0fdd43c11",
+      "p1MaxCents": 5000000,
+      "p1MinCents": 500000,
+      "p2MaxCents": 400000,
+      "p2MinCents": 200000,
+      "p3MaxCents": 150000,
+      "p3MinCents": 75000,
+      "p4MaxCents": 50000,
+      "p4MinCents": 50000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<h3>In-Scope AI &amp; Large Language Model (LLM) Offerings</h3>\n\n<p>We welcome high-quality submissions targeting vulnerabilities within our active AI feature offerings and autonomous agents:</p>\n\n<ul>\n<li>AI Agents &amp; Advanced AI Agents</li>\n<li>AI Agent Builder</li>\n<li>Copilot</li>\n<li>App Builder</li>\n</ul>\n\n<hr>\n\n<h3>⛔ OUT OF SCOPE: Product Alignment &amp; Low-Agency Features</h3>\n\n<p>To focus engineering resources on genuine security risks, the following features and behavior types are strictly OUT OF SCOPE:</p>\n\n<ol>\n<li><strong>Low-Agency Features:</strong> Our passive AI features - specifically <strong>AI Ticket Summary</strong> and <strong>AI Intelligence Triage</strong> - are completely out of scope for prompt injection, jailbreaking, or alignment manipulation.</li>\n<li><strong>Pure Alignment Quirks:</strong> Tricking a model into adopting an unauthorized persona, bypassing safety filters (generating profanity/forbidden topics), or ignoring stylistic system prompts <em>without achieving a secondary system exploit</em> will be closed as Not Applicable.</li>\n<li><strong>UI/UX Exploitation:</strong> Reports where the sole impact is the LLM displaying incorrect, misleading, or goofy text on the reporter&#39;s own screen.</li>\n</ol>\n\n<hr>\n\n<h3>VALID SUBMISSIONS &amp; EXAMPLES</h3>\n\n<p>To qualify for a reward, submissions must demonstrate a tangible security impact, such as unauthorised data access, privilege escalation, cross-tenant leakage, or unauthorised system state changes. </p>\n\n<p>Valid attack vectors include, but are not limited to:</p>\n\n<ul>\n<li><strong>Indirect &amp; Exploitable Prompt Injection:</strong> Using nested, encoded (Base64, HTML), or third-party data inputs to force the model into executing disallowed actions, deleting data, or disclosing backend system secrets.</li>\n<li><strong>Action &amp; Automation Abuse:</strong> Exploiting an LLM feature to execute background macros, update unauthorized tickets, trigger unauthenticated webhooks, or chain prompts to escalate privileges.</li>\n<li><strong>Cross-Tenant Data Leakage &amp; Multitenancy Flaws:</strong> Constructing queries or exploiting retrieval mechanisms to return data, tickets, or content belonging to other tenants.</li>\n<li><strong>Privilege Escalation &amp; Broken Auth:</strong> Bypassing traditional access controls via the AI interface (e.g., using an AI agent to execute an API tool or fetch a database record that the current user&#39;s session token should not have access to) unless this has explicitly configured by the admin.</li>\n<li><strong>RAG (Retrieval) Poisoning &amp; Manipulation:</strong> Injecting malicious content via external data connectors that persistently corrupts agent behavior or forces the system to distribute malicious payloads/links to other users. This does not include the Agent or Admin poisoning their own articles.</li>\n<li><strong>Response Data Leakage:</strong> Forcing the agent to reveal backend API keys, or internal system credentials in its output.</li>\n<li><strong>Data Pipeline &amp; Training Exploits:</strong> Demonstrated model extraction, API fidelity attacks, membership inference (proving specific PII exists in training records), or training pipeline data poisoning.</li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5000,
+       "max": 50000
+      },
+      "2": {
+       "min": 2000,
+       "max": 4000
+      },
+      "3": {
+       "min": 750,
+       "max": 1500
+      },
+      "4": {
+       "min": 500,
+       "max": 500
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "b6080d07-29d1-43da-b8f5-b7ee8708247b",
+     "name": "Zendesk Front End",
+     "targets": [
+      {
+       "id": "20f40e3e-2611-419b-82c1-2ea1f3009ba5",
+       "uri": null,
+       "name": "Zendesk Front End",
+       "category": "website",
+       "ipAddress": "https://{subdomain}.zendesk.com/",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "24aba50b-93c9-454d-a471-8cbbb0d4afec",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "1f2fc0ed-8b79-47a2-a6dc-564a2d9d0828",
+         "name": "API Testing",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        },
+        {
+         "id": "45e28558-ada7-4f38-b087-fb0e6ac31e0d",
+         "name": "AWS",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        },
+        {
+         "id": "4aeb1677-ac84-4afd-827e-054b363ca984",
+         "name": "GraphQL",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        },
+        {
+         "id": "537a37bb-0fd5-4cb3-88b3-d08fac588565",
+         "name": "Websockets",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        },
+        {
+         "id": "ad43847d-d5ec-4d65-a1f1-8f20ec7e9238",
+         "name": "Penetration Testing",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        },
+        {
+         "id": "bc744424-2ab8-48c8-b938-c6d6abcdf500",
+         "name": "Website Testing",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        },
+        {
+         "id": "fbcf3656-e6af-403a-a14e-6ec830fb8668",
+         "name": "Javascript",
+         "targetId": "20f40e3e-2611-419b-82c1-2ea1f3009ba5"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 1,
+     "description": null,
+     "rewardRange": {
+      "id": "b4eb1385-b773-4e80-9fc2-ea23678ebb67",
+      "p1MaxCents": 2000000,
+      "p1MinCents": 500000,
+      "p2MaxCents": 300000,
+      "p2MinCents": 200000,
+      "p3MaxCents": 150000,
+      "p3MinCents": 75000,
+      "p4MaxCents": 25000,
+      "p4MinCents": 25000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>Vulnerabilities will only be accepted if they are executed within the context of an anonymous user, end-user or customer. These are the people who use Zendesk Support to request assistance, not agents or administrators, who use the various other parts of our platform (see below) to assist customers.</p>\n\n<ul>\n<li>  Messaging front end\n\n<ul>\n<li>  Web widget and web widget SDK</li>\n<li>  Zendesk Mobile SDK on <a href=\"https://developer.zendesk.com/documentation/zendesk-sdks/#ios\" rel=\"nofollow noreferrer\" target=\"_blank\">iOS</a> and <a href=\"https://developer.zendesk.com/documentation/zendesk-sdks/#android\" rel=\"nofollow noreferrer\" target=\"_blank\">Android</a></li>\n<li>  Our social channel <a href=\"https://support.zendesk.com/hc/en-us/articles/4408831648794-Getting-started-with-social-messaging\" rel=\"nofollow noreferrer\" target=\"_blank\">integrations</a></li>\n</ul></li>\n<li>  Voice &amp; Contact Center front end</li>\n<li>  Knowledge front end, including form submission (submit a request), My actives and My profile - <code>*.zendesk.com/hc/</code></li>\n<li>  Authentication front end - <code>*.zendesk.com/auth/</code></li>\n</ul>\n\n<p>The following categories of vulnerabilities are ineligible for bounty:</p>\n\n<ul>\n<li>  Uploading of malicious attachments or malware, Refer to <a href=\"https://support.zendesk.com/hc/en-us/articles/4408832757146-Enabling-attachments-in-tickets#topic_nrp_bnx_xdb\" rel=\"nofollow noreferrer\" target=\"_blank\">Enabling private attachments</a> and <a href=\"https://support.zendesk.com/hc/en-us/articles/4483794022170-Managing-malicious-attachments#topic_jyj_r25_xsb__ul_h5j_mf5_xsb\" rel=\"nofollow noreferrer\" target=\"_blank\">About malware scanning</a></li>\n<li>  Missing security controls related to HTTP headers, such as HSTS, CSP, X-Frame-Options or cookie directives.</li>\n<li>  XSS (or a behaviour) where you can only attack yourself (e.g. &quot;Self XSS&quot;).</li>\n<li>  HTML injection or injection attacks that rely on phishing via links, images or use of the <code>&lt;a&gt;</code> tag.</li>\n<li>  WebCache poisoning that only results in a DoS. To be eligible for a bounty please demonstrate a harmful HTTP response that can be served to other users.</li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5000,
+       "max": 20000
+      },
+      "2": {
+       "min": 2000,
+       "max": 3000
+      },
+      "3": {
+       "min": 750,
+       "max": 1500
+      },
+      "4": {
+       "min": 250,
+       "max": 250
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "7ec476c8-7f7c-4123-be49-b927c921d46f",
+     "name": "Zendesk Suite",
+     "targets": [
+      {
+       "id": "18cf32d6-9786-4ce0-a6d1-802048751571",
+       "uri": null,
+       "name": "Zendesk Suite",
+       "category": "website",
+       "ipAddress": "https://{subdomain}.zendesk.com/",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "fe19a312-8446-485a-a191-3a0609861d0f",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "1f2fc0ed-8b79-47a2-a6dc-564a2d9d0828",
+         "name": "API Testing",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        },
+        {
+         "id": "45e28558-ada7-4f38-b087-fb0e6ac31e0d",
+         "name": "AWS",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        },
+        {
+         "id": "4aeb1677-ac84-4afd-827e-054b363ca984",
+         "name": "GraphQL",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        },
+        {
+         "id": "537a37bb-0fd5-4cb3-88b3-d08fac588565",
+         "name": "Websockets",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        },
+        {
+         "id": "ad43847d-d5ec-4d65-a1f1-8f20ec7e9238",
+         "name": "Penetration Testing",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        },
+        {
+         "id": "bc744424-2ab8-48c8-b938-c6d6abcdf500",
+         "name": "Website Testing",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        },
+        {
+         "id": "fbcf3656-e6af-403a-a14e-6ec830fb8668",
+         "name": "Javascript",
+         "targetId": "18cf32d6-9786-4ce0-a6d1-802048751571"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 2,
+     "description": null,
+     "rewardRange": {
+      "id": "ce5a7dc8-10ad-48df-ac7a-005bde2c8a06",
+      "p1MaxCents": 1000000,
+      "p1MinCents": 500000,
+      "p2MaxCents": 200000,
+      "p2MinCents": 200000,
+      "p3MaxCents": 50000,
+      "p3MinCents": 50000,
+      "p4MaxCents": 10000,
+      "p4MinCents": 10000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>This is our core product and main platform for accessing all things Zendesk as an agent or administrator.</p>\n\n<ul>\n<li>Agent workspace - *.zendesk.com/agent</li>\n<li>Knowledge (previously Guide) - *.zendesk.com/knowledge/</li>\n<li>Contact center</li>\n<li>Analytics (previously Explore) *.zendesk.com/explore/</li>\n<li>Workforce management (WFM) *.zendesk.com/wfm/</li>\n<li>Quality assurance (QA) *.zendesk.com/qa</li>\n<li>Admin center - *.zendesk.com/admin/</li>\n</ul>\n\n<p>The following categories of vulnerabilities are ineligible for bounty:</p>\n\n<ul>\n<li>Missing security controls related to HTTP headers, such as HSTS,CSP, X-Frame-Options or cookie directives..</li>\n<li>XSS (or a behaviour) where you can only attack yourself (e.g. &quot;Self XSS&quot;).</li>\n<li>XSS on pages where administrators are intentionally given full HTML editing capabilities, such as custom theme editing</li>\n<li>HTML injection or injection attacks that rely on phishing via links, images or use of the &lt;a&gt; tag.</li>\n<li>All issues affecting Contributor Role and Light Agent are ineligible for bounty until further notice.</li>\n<li>API token scope/privilege issues allowing Admins to perform actions as other users are ineligible for bounty until further notice.</li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5000,
+       "max": 10000
+      },
+      "2": {
+       "min": 2000,
+       "max": 2000
+      },
+      "3": {
+       "min": 500,
+       "max": 500
+      },
+      "4": {
+       "min": 100,
+       "max": 100
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "437c3814-d01f-4f0b-8dc3-76b25eaabac7",
+     "name": "Zendesk Mobile Applications",
+     "targets": [
+      {
+       "id": "a0cb37be-cae3-4de3-a92d-03691ff57830",
+       "uri": null,
+       "name": "Zendesk Mobile Applications",
+       "category": "other",
+       "ipAddress": "https://{subdomain}.zendesk.com/",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "975a8619-117b-40bc-a258-99c891673fe8",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "1f2fc0ed-8b79-47a2-a6dc-564a2d9d0828",
+         "name": "API Testing",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        },
+        {
+         "id": "a47bcaa8-a080-4539-b4ca-e699e72d2023",
+         "name": "Swift",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        },
+        {
+         "id": "a6a12b60-e857-44a3-9cc9-3aa9a21aa203",
+         "name": "Mobile Application Testing",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        },
+        {
+         "id": "ad43847d-d5ec-4d65-a1f1-8f20ec7e9238",
+         "name": "Penetration Testing",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        },
+        {
+         "id": "c4d77d88-21a3-4a8d-81b7-555e301c483e",
+         "name": "Kotlin",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        },
+        {
+         "id": "e251f4f0-1204-4c8a-9e12-dba8fdaadf48",
+         "name": "iOS",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        },
+        {
+         "id": "ee1461dd-e5fd-4e9d-8c95-0344ba08bdc2",
+         "name": "Android",
+         "targetId": "a0cb37be-cae3-4de3-a92d-03691ff57830"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 3,
+     "description": null,
+     "rewardRange": {
+      "id": "0ef5ecf6-4526-4651-bdff-293f5c46e0c3",
+      "p1MaxCents": 200000,
+      "p1MinCents": 200000,
+      "p2MaxCents": 100000,
+      "p2MinCents": 100000,
+      "p3MaxCents": 50000,
+      "p3MinCents": 50000,
+      "p4MaxCents": 10000,
+      "p4MinCents": 10000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>Mobile applications provide a subset of agent or administrator functionality. This is not our SDK’s, which is covered in the Zendesk front end. </p>\n\n<ul>\n<li>Zendesk iOS - <a href=\"https://apps.apple.com/app/id1174276185\" rel=\"nofollow noreferrer\" target=\"_blank\">Apple App Store - Zendesk Support App</a></li>\n<li>Zendesk Android - <a href=\"https://play.google.com/store/apps/details?id=com.zendesk.android&hl=en\" rel=\"nofollow noreferrer\" target=\"_blank\">Google App Store - Zendesk Support</a></li>\n</ul>\n\n<p>Submissions requiring the use of a jailbroken or rooted device are not eligible for bounty.</p>",
+     "rewardRangeData": {
+      "1": {
+       "min": 2000,
+       "max": 2000
+      },
+      "2": {
+       "min": 1000,
+       "max": 1000
+      },
+      "3": {
+       "min": 500,
+       "max": 500
+      },
+      "4": {
+       "min": 100,
+       "max": 100
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "58f07508-0cf1-4a29-9d05-7675b0f04faf",
+     "name": "Zendesk Public Repositories",
+     "targets": [
+      {
+       "id": "7f78050b-1a56-4981-a716-95e12c00bc45",
+       "uri": null,
+       "name": "Zendesk Public Repositories",
+       "category": "other",
+       "ipAddress": "https://github.com/zendesk https://github.com/Tymeshift https://github.com/klausapp https://github.com/ultimateai",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "d7197158-09fe-4dc6-8c9b-04be8de2b8f1",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "20f6988d-5b8c-41bb-9ca8-d9b271b7874d",
+         "name": "Github",
+         "targetId": "7f78050b-1a56-4981-a716-95e12c00bc45"
+        },
+        {
+         "id": "e6a92521-9abd-43e3-90a3-9c7b1b72f12a",
+         "name": "Code review",
+         "targetId": "7f78050b-1a56-4981-a716-95e12c00bc45"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 4,
+     "description": null,
+     "rewardRange": {
+      "id": "0ef5ecf6-4526-4651-bdff-293f5c46e0c3",
+      "p1MaxCents": 200000,
+      "p1MinCents": 200000,
+      "p2MaxCents": 100000,
+      "p2MinCents": 100000,
+      "p3MaxCents": 50000,
+      "p3MinCents": 50000,
+      "p4MaxCents": 10000,
+      "p4MinCents": 10000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>We welcome review of our public facing repositories for vulnerabilities. Any public repositories from the following organisations are in-scope:</p>\n\n<ul>\n<li>https://github.com/zendesk</li>\n<li>https://github.com/ultimateai</li>\n</ul>\n\n<p>Forked repositories may be reviewed and may be fixed at our discretion. Bounties for issues found in forked repositories may be awarded at our discretion.</p>\n\n<h3>Out of Scope</h3>\n\n<ul>\n<li>Archived repositories</li>\n<li>Theoretical issues without a working proof of impact</li>\n<li>Findings that do not demonstrate a realistic attack path</li>\n<li>Issues that require contrived environments, unsupported assumptions, or unrealistic misuse</li>\n<li>Test-only, example-only, or documentation-only issues with no production security impact</li>\n<li>Findings produced by automated/AI scanning that lack real security impact - e.g. P5 issues, code smells, style or hygiene findings, or out-of-context findings</li>\n</ul>\n\n<p>Reports must include clear reproduction steps and demonstrate <strong>concrete security impact in a supported, realistic scenario.</strong></p>\n\n<h3>Out of Scope Public Repositories (Due to large number of AI generated false positives, contrived scenarios or unrealistic scenarios)</h3>\n\n<p><strong>Development Tools</strong></p>\n\n<ul>\n<li>zcli, zendesk_apps_support, zendesk_apps_tools, zendesk_app_framework_sdk, app_scaffold, app_scaffolds, apps_scaffold_basic, v2_repl_app, zaf-toolbox, zat-deploy, zat-docker</li>\n</ul>\n\n<p><strong>API Clients</strong></p>\n\n<ul>\n<li>zendesk_api_client_cs, zendesk_api_client_php, zendesk_api_client_rb, zendesk_api_client_rb_repl, zendesk-java-client, zendesk-sell-for-zapier, connect_ruby_sdk, basecrm-java, basecrm-php, basecrm-python, basecrm-ruby, iron_bank, api_client</li>\n</ul>\n\n<p><strong>Demo/sample apps &amp; docs</strong></p>\n\n<ul>\n<li>android_sdk_demo_apps, ios_sdk_demo_apps, zendesk_sdk_demo_apps_android, zendesk_sdk_demo_apps_ios, demo_apps, demo_app_modal_instances_locations_pagination, demo_app_send_jwttoken_in_client_request, demo_ticket_submission_and_save_events, plus the various <em>_demo_zaf_app repos (activation_events_demo_zaf_app, change_requester_demo_zaf_app, client_request_cors_demo_zaf_app, hide_ticket_field_demo_zaf_app, metadata_call_demo_zaf_app, app-notification-send-receive, notifying-an-agent-demo-zaf-app), sell-zaf-app-toolbox, talk_partner_sample_app, sample_wordpress_anychannel_integration, any_channel_json_schemas, zendesk_developer_platform_samples, zendesk_jwt_sso_examples, index-content-in-guide-action, okta-identity-governance-demo, propagation-test-</em>, guidesearch-crawlertest.github.io, sunco-pipeline-bot-PoC, copenhagen_theme, help-center-wysiwyg</li>\n</ul>\n\n<p><strong>Ruby libraries</strong></p>\n\n<ul>\n<li>abbreviato, charcoal, credit_card_sanitizer, cross-storage, samlr, stronger_parameters, ticket_sharing</li>\n</ul>\n\n<p><strong>Other</strong></p>\n\n<ul>\n<li>maxwell, radar, samson_secret_puller</li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 2000,
+       "max": 2000
+      },
+      "2": {
+       "min": 1000,
+       "max": 1000
+      },
+      "3": {
+       "min": 500,
+       "max": 500
+      },
+      "4": {
+       "min": 100,
+       "max": 100
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "b862becc-59f3-48f5-901d-b5a1a40b9f4b",
+     "name": "Zendesk Marketplace Apps created by Zendesk",
+     "targets": [
+      {
+       "id": "b0610706-d00b-4733-a930-8766772978e9",
+       "uri": null,
+       "name": "Zendesk Marketplace Apps created by Zendesk",
+       "category": "website",
+       "ipAddress": "https://{subdomain}.zendesk.com/",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "f0afa786-61a9-45f6-8d4a-2a4538ca52ea",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "1f2fc0ed-8b79-47a2-a6dc-564a2d9d0828",
+         "name": "API Testing",
+         "targetId": "b0610706-d00b-4733-a930-8766772978e9"
+        },
+        {
+         "id": "ad43847d-d5ec-4d65-a1f1-8f20ec7e9238",
+         "name": "Penetration Testing",
+         "targetId": "b0610706-d00b-4733-a930-8766772978e9"
+        },
+        {
+         "id": "bc744424-2ab8-48c8-b938-c6d6abcdf500",
+         "name": "Website Testing",
+         "targetId": "b0610706-d00b-4733-a930-8766772978e9"
+        },
+        {
+         "id": "fbcf3656-e6af-403a-a14e-6ec830fb8668",
+         "name": "Javascript",
+         "targetId": "b0610706-d00b-4733-a930-8766772978e9"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 5,
+     "description": null,
+     "rewardRange": {
+      "id": "0ef5ecf6-4526-4651-bdff-293f5c46e0c3",
+      "p1MaxCents": 200000,
+      "p1MinCents": 200000,
+      "p2MaxCents": 100000,
+      "p2MinCents": 100000,
+      "p3MaxCents": 50000,
+      "p3MinCents": 50000,
+      "p4MaxCents": 10000,
+      "p4MinCents": 10000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>We provide customers &amp; developers the ability to provide extensibility and integrations with our Products through Zendesk Marketplace. We also publish apps and integrations that can be found under the following profiles: </p>\n\n<ul>\n<li><a href=\"https://www.zendesk.com/marketplace/partners/475/zendesk/\" rel=\"nofollow noreferrer\" target=\"_blank\">Zendesk owned apps &amp; integrations</a></li>\n<li><a href=\"https://www.zendesk.com/marketplace/apps/support/4895/zendesk-workforce-management/\" rel=\"nofollow noreferrer\" target=\"_blank\">WFM app</a></li>\n<li><a href=\"https://www.zendesk.com/marketplace/partners/2196/ultimate/\" rel=\"nofollow noreferrer\" target=\"_blank\">Ultimate app</a></li>\n<li><a href=\"https://www.zendesk.com/marketplace/apps/chat/181357/klaus/?queryID=9b0ed729ffdbec96657b1bd437baa91d\" rel=\"nofollow noreferrer\" target=\"_blank\">Klaus Chat app</a></li>\n<li><a href=\"https://www.zendesk.com/marketplace/apps/support/181357/klaus/?queryID=9b0ed729ffdbec96657b1bd437baa91d\" rel=\"nofollow noreferrer\" target=\"_blank\">Klaus Support app</a></li>\n</ul>\n\n<p>Only Zendesk owned &amp; developed applications are eligible for bounty. If you find vulnerabilities in other Marketplace apps, integrations or themes please contact the developer through the “contact us” button on the developers page.</p>",
+     "rewardRangeData": {
+      "1": {
+       "min": 2000,
+       "max": 2000
+      },
+      "2": {
+       "min": 1000,
+       "max": 1000
+      },
+      "3": {
+       "min": 500,
+       "max": 500
+      },
+      "4": {
+       "min": 100,
+       "max": 100
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "d34a90dd-d1a7-4eff-a5fd-d282195abd13",
+     "name": "Out of Scope",
+     "targets": [
+      {
+       "id": "3b0e06f3-d77a-4ccf-9959-dc89a2ede61a",
+       "uri": "",
+       "name": "support.zendesk.com ",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "d36cdf09-d793-438e-8054-9feb84b9ec5d",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": null,
+       "recentChangeFlags": null
+      },
+      {
+       "id": "ae18cb33-521b-4370-8604-d6ae2739605c",
+       "uri": "",
+       "name": "www.zendesk.com",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "70446313-a534-4f61-990f-3b2c857ce8ce",
+        "sortOrder": 1
+       },
+       "sortOrder": 1,
+       "tags": null,
+       "recentChangeFlags": null
+      },
+      {
+       "id": "67defa21-3e1c-42e4-a0d1-52f15abf5c7c",
+       "uri": "",
+       "name": "\\*.zdassets.com  ",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "5587b135-a659-47e7-9292-cb2aa75f9ae9",
+        "sortOrder": 2
+       },
+       "sortOrder": 2,
+       "tags": null,
+       "recentChangeFlags": null
+      },
+      {
+       "id": "5aa1ee54-b0ad-4b0f-a031-2b7632db2e33",
+       "uri": "",
+       "name": "Zendesk for Sales or Zendesk Sell ",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "0a8e3d6a-73b5-4efd-98ea-9b2f00c017cc",
+        "sortOrder": 3
+       },
+       "sortOrder": 3,
+       "tags": null,
+       "recentChangeFlags": null
+      },
+      {
+       "id": "93a57ba4-4302-4389-8bb6-b790fd5d4f18",
+       "uri": "",
+       "name": "Zendesk supply chain, vendors and contractors ",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "3789c0f3-0ba0-4a65-8031-eceb6b7afe0b",
+        "sortOrder": 4
+       },
+       "sortOrder": 4,
+       "tags": null,
+       "recentChangeFlags": null
+      },
+      {
+       "id": "86da08e3-98ff-4d69-a518-bd6eca774529",
+       "uri": "",
+       "name": "Already public vulnerabilities (i.e. CVE’s) in infrastructure, frameworks or libraries we use",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "46f62529-482b-4056-870e-437bbb0f3667",
+        "sortOrder": 5
+       },
+       "sortOrder": 5,
+       "tags": null,
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": false,
+     "sortOrder": 7,
+     "description": null,
+     "rewardRange": null,
+     "descriptionHtml": null,
+     "rewardRangeData": {},
+     "recentChangeFlags": null
+    }
+   ],
+   "resources": [],
+   "engagement": {
+    "id": "00472299-3039-4471-af31-f5c2962316c1",
+    "code": "zendesk",
+    "state": "in_progress",
+    "endsAt": null,
+    "bountyId": "1be3769a-e8f4-4217-ba34-77f6ba80f31a",
+    "startsAt": "2025-12-11T18:00:00Z"
+   },
+   "vrtScopeRules": [],
+   "engagementConfiguration": {
+    "participation": "open",
+    "crowdSelectionStrategy": "none"
+   }
+  },
+  "industryName": "Computer Software",
+  "methodologyName": null,
+  "logoUrl": "https://logos.bugcrowdusercontent.com/logos/5a06/021b/2ce66f91/897f135ffdc669491639a855d38d599a_zendesk_logo.jpeg",
+  "logoBackgroundColor": "#fff",
+  "displayDisclosureTerms": true,
+  "coordinatedDisclosure": false,
+  "collaborationEnabled": true,
+  "participation": "open",
+  "rewardAllocation": "pay_for_success",
+  "engagementTypeDetail": {
+   "iconVariant": "bug-bounty",
+   "productLabel": "Bug Bounty",
+   "timeboxed": false
+  },
+  "pausedReason": null,
+  "lastTransitionAt": "2025-12-11T18:00:00.039Z",
+  "cancellationReason": null,
+  "statusLabel": "In progress",
+  "routesPaths": {
+   "brief": "/engagements/zendesk",
+   "changelogs": "/engagements/zendesk/changelog",
+   "submissions": null,
+   "announcements": "/engagements/zendesk/announcements",
+   "hallOfFame": "/engagements/zendesk/hall_of_fames",
+   "crowdstream": null
+  },
+  "announcementsCount": 1,
+  "knownIssuesEnabled": true,
+  "isDemo": false,
+  "serviceLevel": "Priority Triage",
+  "submitReportUrl": "/engagements/zendesk/submissions/new",
+  "methodologyUrl": null,
+  "progressPercentage": 0,
+  "badgeVariant": null,
+  "userBannedFromEngagement": null,
+  "isLoggedIn": false,
+  "loginUrl": "/user/sign_in",
+  "scopedSubmissionsUrl": "/submissions?engagement%5B%5D=zendesk&sort%5B%5D=submitted-desc",
+  "isFollowing": null,
+  "credentialsUrl": null,
+  "toggleSubscriptionUrl": "/zendesk/engagement_subscribers",
+  "engagementChangelogsUrl": "/engagements/zendesk/changelog",
+  "publishedAt": "2026-11-16T01:00:45.921Z",
+  "engagementChangelogUrl": "/engagements/zendesk/changelog/d7928c36-fac5-4045-8d00-dd2a8638e21c",
+  "createUserFeedbacksUrl": "/engagements/zendesk/feedbacks",
+  "engagementCrowdstreamUrl": null,
+  "acceptedSubmissionsEnabled": false,
+  "disclosedReportsEnabled": false,
+  "engagementsUrl": "/engagements",
+  "engagementPaymentDetailUrl": null,
+  "shouldShowHideButton": false,
+  "engagementHiddenData": {},
+  "totalRewardPool": null,
+  "vrtScopeRules": {
+   "data": []
+  },
+  "vrtVersion": "1.19.1",
+  "submissionThrottleHint": null,
+  "showIdVerificationAlert": false,
+  "identityVerificationSettingsUrl": "https://bugcrowd.com/h/settings/identity_verification",
+  "identityUrl": null
+ }
+}

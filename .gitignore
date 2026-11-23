@@ -1,0 +1,10 @@
+node_modules/
+dist/
+test/private/
+
+# Switzer: the ITF Free Font License forbids redistributing the files. npm run fonts fetches them.
+fonts/switzer-*.woff2
+fonts/LICENSE-Switzer.txt
+
+# Local agent workflows (maintenance skills that drive a hunter's logged-in browser).
+.claude/

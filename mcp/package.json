@@ -1,0 +1,48 @@
+{
+  "name": "@principlebreach/scopedown-mcp",
+  "version": "1.0.0",
+  "description": "MCP server that gives AI agents your HackerOne and Bugcrowd access through the ScopeDown browser extension.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "bug-bounty",
+    "hackerone",
+    "bugcrowd",
+    "security",
+    "ai-agents"
+  ],
+  "homepage": "https://principlebreach.com",
+  "bugs": {
+    "url": "https://github.com/PrincipleBreach/scopedown/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrincipleBreach/scopedown.git",
+    "directory": "mcp"
+  },
+  "license": "MIT",
+  "author": "Principle Breach",
+  "type": "module",
+  "bin": {
+    "scopedown-mcp": "bin/scopedown-mcp.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  }
+}

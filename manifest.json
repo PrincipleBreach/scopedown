@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "ScopeDown",
+  "version": "1.0.0",
+  "description": "Turn any HackerOne or Bugcrowd program into agent-ready Markdown: scope, rewards, testing rules and the full policy. By Principle Breach.",
+  "author": "Principle Breach",
+  "homepage_url": "https://principlebreach.com/?utm_source=scopedown&utm_medium=referral&utm_campaign=extension-details",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA22EvIdkUlSU0Byupq+spE2Iy/U0CXyIF4wtfDia1j0avV1Ago4MBxiH4KpFGtdHL5LLlTqjfnuiHYfZCypW82o/b1Z/CzQndPW050nR4P9jx2UxpyoU+zgblA1t3OyToH3z4jI+PaibqQ/KI9ZRJbOyrnPmf86k3oIEEzI2RJ4gxgAfWpltBDwiD6oUr9aBDq+iqNH99JrY1K7hqAsKVJ98ViizwXaqgwTpRTHS7VEtMWMUSKQohkp2dWHJy+nA4VVEmi6xbQFDTHvUGMQo74FdVYouYKPBlAeyVqQYIIkjiOHDiHKeWMBiz9nwg5UNGi8nK18IUcGQthwXnehSpMQIDAQAB",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "ScopeDown: copy this program as Markdown",
+    "default_popup": "src/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "offscreen"
+  ],
+  "optional_permissions": [
+    "nativeMessaging",
+    "notifications"
+  ],
+  "optional_host_permissions": [
+    "https://hackerone.com/*",
+    "https://bugcrowd.com/*"
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Open ScopeDown on the current program page"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "scopedown@principlebreach.com",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  }
+}

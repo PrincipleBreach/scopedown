@@ -1,0 +1,421 @@
+{
+ "code": "openai-safety",
+ "brief": {
+  "id": "3dc49551-ddac-4a19-8cb7-6a0f44ff144e",
+  "engagementId": "830cb151-cdb2-4836-ac25-14e946738a47",
+  "data": {
+   "brief": {
+    "id": "194e499b-1b95-4548-98f7-eae40b626172",
+    "name": "Safety Bug Bounty",
+    "tagline": "The OpenAI Safety Bug Bounty Program is designed to complement our existing Security Bug Bounty Program by rewarding for safety and abuse issues that pose risks to OpenAI users. ",
+    "description": "<p>We’re pleased to announce that we are launching a new Bug Bounty Program for select safety and abuse issues. As AI technology rapidly evolves, so do the potential ways it can be misused. We believe it’s essential to recognize and reward responsible disclosures involving critical safety and abuse scenarios.</p>\n\n<h1>Program Rules</h1>\n\n<p>In addition to the existing <a href=\"https://bugcrowd.com/engagements/openai\" rel=\"nofollow noreferrer\" target=\"_blank\">OpenAI Security Bug Bounty rules</a>, the following rules apply:</p>\n\n<ol>\n<li>Qualifying issues must represent a design or implementation issue in an active OpenAI product that can be abused by an attacker to cause material harm.</li>\n<li>Reports must be addressable via a clear set of recommended steps or mitigations. The goal of this program is to reward for bug fixes and we cannot reward requests for general product improvements.</li>\n<li>Qualifying issues must be consistently reproducible. Researchers should provide enough steps and evidence to reproduce the issue reliably under typical conditions. We may accept partial or probabilistic exploits if the result is still high impact, but the burden of proof is on the researcher to demonstrate it is not a one-off fluke.</li>\n<li>We only reward for issues that have not already been submitted to us.</li>\n<li>Any accounts used as victims must be test accounts owned by the researcher. Any testing that affects accounts, assets, or services owned by others is strictly prohibited.</li>\n<li>Vulnerability testing must not risk damage or compromise to any real-world accounts. For example, prompt injection text should not be hosted on public surfaces discoverable by real users or their agents. </li>\n<li>Final reward decisions and amounts are up to OpenAI discretion, especially when applied to safety issues.</li>\n</ol>",
+    "industryTagId": "02370343-bf13-4661-a7a2-caa1c1076ad1",
+    "targetsOverview": "<h1>Test Accounts</h1>\n\n<p>Safety and abuse testing may result in account enforcement including bans. Please use test accounts in your bughunting to ensure no complications with your personal account. Please note that authorized testing does not exempt you from all of OpenAI's terms of service. Abusing the service may result in rate limiting, blocking, or banning. Automated vulnerability scanners may trigger these outcomes. If your account or IP is rate-limited or blocked, please wait for the block to expire; we cannot manually remove it. </p>\n\n<p>You will not be reimbursed for any upgrades or purchases made on your account.</p>\n\n<h1>Safe Harbor</h1>\n\n<p>OpenAI will not threaten or bring any legal action against anyone who makes a good faith effort to comply with this bug bounty policy. This includes any claim under the DMCA for circumventing technological measures to protect the services and applications eligible under this policy.</p>\n\n<p>As long as you comply with this policy:</p>\n\n<ul>\n<li>We consider your safety and security research to be \"authorized\" under the Computer Fraud and Abuse Act (and/or similar state laws), and<br>\n</li>\n<li>We waive any restrictions in our applicable Terms of Use and Usage Policies that would prohibit your participation in this policy, but only for the limited purpose of your safety and security research under this policy.</li>\n</ul>\n\n<p>OpenAI systems and services may be interconnected with third-party systems and services. If you submit a report through our bug bounty program that affects a third party service, we will limit what we share with the affected third party. Please understand that, while we can authorize your research on OpenAI’s systems and services, we cannot authorize your efforts on third-party products or guarantee they won’t pursue legal action against you. That said, if legal action is initiated by a third party against you because of your participation in this bug bounty program, and you have complied with our bug bounty policy, we will take steps to make it known that your actions were conducted in compliance with this policy. This is not, and should not be understood as, any agreement on our part to defend, indemnify, or otherwise protect you from any third party action based on your actions.</p>\n\n<p>You are expected, as always, to comply with all applicable laws.</p>\n\n<p>If you have concerns or are unsure whether your safety and security research aligns with this policy, please contact support@bugcrowd.com before proceeding.  </p>",
+    "safeHarborStatus": {
+     "status": "full",
+     "label": "Safe harbor",
+     "description": "This engagement is fully committed to providing safe harbor for good-faith security research."
+    },
+    "collaborationEnabled": true,
+    "additionalInformation": ""
+   },
+   "scope": [
+    {
+     "id": "b259a637-6db4-451f-999b-e7e771c8151c",
+     "name": "Agentic Tools Including MCP",
+     "targets": [
+      {
+       "id": "0f9acbe5-f326-40b9-b51e-4df46a410014",
+       "uri": "",
+       "name": "Agentic Tools",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "3c490d1d-b73a-4f57-9eb8-a32b1d0570bb",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "d14cf1dd-8069-48ef-9a2b-779bf3a066f9",
+         "name": "Artificial Intelligence",
+         "targetId": "0f9acbe5-f326-40b9-b51e-4df46a410014"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 0,
+     "description": null,
+     "rewardRange": {
+      "id": "9c43adae-a48d-4557-b3f0-ab61640ea363",
+      "p1MaxCents": 750000,
+      "p1MinCents": 550000,
+      "p2MaxCents": 350000,
+      "p2MinCents": 250000,
+      "p3MaxCents": 150000,
+      "p3MinCents": 75000,
+      "p4MaxCents": 50000,
+      "p4MinCents": 25000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>Abuse risks in our agentic products, defined as any product that 1) performs an action on behalf of the user or 2) accesses data as the user. This includes Atlas Browser, Codex, Operator, Connectors, and other agentic ChatGPT tools. Reports that detail issues that exist solely in third-party services that do not result in OpenAI-side remediation are out of scope. Ensure your tests attack only your own test accounts, never agents operated by real users. </p>\n\n<p>Connectors and MCP (Model Context Protocol) integrations expand an agent’s ability to access and act on data in external systems (e.g., reading content, searching, creating/updating records, sending messages, or retrieving files). These integrations are in scope when a vulnerability in OpenAI systems, configuration, permissioning, confirmation UX, or integration logic can be abused to cause material harm (e.g., unauthorized data access, cross-tenant data exposure, or harmful actions performed under the victim’s account).</p>\n\n<ul>\n<li><strong>In Scope:</strong> Indirect / third-party prompt injection or untrusted-content attacks that cause an agent to misuse a Connector or MCP tool to access, exfiltrate, or transform sensitive data from a bughunter-owned “victim” account, or to take a harmful action under that account. For the purposes of our bug bounty rewards program, extracting personally identifiable information from a user’s chat history counts as sensitive private data. Prompt injections must meet a minimum bar for realism and feasibility; reports that rely on victims running clearly malicious or dangerous commands are not eligible for rewards.<br></li>\n<li><strong>In Scope:</strong> Authorization or permission bypasses where an agent can access Connector/MCP data or perform Connector/MCP actions beyond what the user, workspace, or app integration permissions should allow (including cross-workspace or cross-tenant data exposure).<br></li>\n<li><strong>In Scope:</strong> Vulnerabilities that cause agents to perform tool actions without appropriate user understanding/confirmation, or where confirmations are materially misleading relative to what will be accessed/sent/done (especially for high-impact actions like sharing/exporting data, changing settings, or posting/sending messages).<br></li>\n<li><strong>In Scope:</strong> Misusing an agentic tool to perform a disallowed action: creating new OpenAI user accounts at scale (at least 10 accounts without human interaction).<br></li>\n<li><strong>Out of Scope:</strong> Reports that detail issues that exist solely in third-party services that do not result in OpenAI-side remediation. For example, issues caused by poorly annotated third-party MCP servers are not in scope.<br></li>\n<li><strong>Out of Scope:</strong> Testing that requires accessing accounts, tenants, or data you do not own or do not have explicit authorization to test.<br></li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5500,
+       "max": 7500
+      },
+      "2": {
+       "min": 2500,
+       "max": 3500
+      },
+      "3": {
+       "min": 750,
+       "max": 1500
+      },
+      "4": {
+       "min": 250,
+       "max": 500
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "ceeedc92-a4dd-4f42-ba18-c4c1b0999d20",
+     "name": "OpenAI Proprietary Information",
+     "targets": [
+      {
+       "id": "75fe2658-39e9-4aeb-9add-5a26c0c8ac4d",
+       "uri": "",
+       "name": "*.openai.com",
+       "category": "other",
+       "ipAddress": null,
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "dae7ec3d-264a-43cf-910b-025e4c0da99e",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "bc744424-2ab8-48c8-b938-c6d6abcdf500",
+         "name": "Website Testing",
+         "targetId": "75fe2658-39e9-4aeb-9add-5a26c0c8ac4d"
+        },
+        {
+         "id": "ef82adfb-fd5b-439b-a090-ed44823bf259",
+         "name": "Azure",
+         "targetId": "75fe2658-39e9-4aeb-9add-5a26c0c8ac4d"
+        },
+        {
+         "id": "f21f7de7-31b4-4cc8-89a4-39c9eb6b7345",
+         "name": "Python",
+         "targetId": "75fe2658-39e9-4aeb-9add-5a26c0c8ac4d"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 1,
+     "description": null,
+     "rewardRange": {
+      "id": "9c43adae-a48d-4557-b3f0-ab61640ea363",
+      "p1MaxCents": 750000,
+      "p1MinCents": 550000,
+      "p2MaxCents": 350000,
+      "p2MinCents": 250000,
+      "p3MaxCents": 150000,
+      "p3MinCents": 75000,
+      "p4MaxCents": 50000,
+      "p4MinCents": 25000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>Vulnerabilities or model issues that return OpenAI internal information, intellectual property, or otherwise confidential data.</p>\n\n<ul>\n<li><strong>In Scope:</strong> Vulnerabilities that return proprietary information related to reasoning (e.g., full unsummarized Chain of Thought).<br></li>\n<li><strong>In Scope</strong> (already covered by the existing Security Bug Bounty scope): Vulnerabilities that enable the exposure of other OpenAI proprietary information (e.g. insider information) — report via the Security Bug Bounty.<br></li>\n<li><strong>Out of Scope:</strong> Model responses that appear to expose internal OpenAI proprietary information.<br></li>\n<li><strong>Out of Scope:</strong> System prompts, or any other information present in the model context window at inference time except for CoTs.<br></li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5500,
+       "max": 7500
+      },
+      "2": {
+       "min": 2500,
+       "max": 3500
+      },
+      "3": {
+       "min": 750,
+       "max": 1500
+      },
+      "4": {
+       "min": 250,
+       "max": 500
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "449fb548-9ed4-45c9-b332-faf8831e4eab",
+     "name": "Account and Platform Integrity",
+     "targets": [
+      {
+       "id": "fcb4d4b4-62c6-430b-96e3-37bde84f5456",
+       "uri": "https://openai.com/",
+       "name": "openai.com",
+       "category": "website",
+       "ipAddress": null,
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "c2ef491d-a68e-4bdf-b5ea-43944e19b1c4",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "bc744424-2ab8-48c8-b938-c6d6abcdf500",
+         "name": "Website Testing",
+         "targetId": "fcb4d4b4-62c6-430b-96e3-37bde84f5456"
+        },
+        {
+         "id": "ef82adfb-fd5b-439b-a090-ed44823bf259",
+         "name": "Azure",
+         "targetId": "fcb4d4b4-62c6-430b-96e3-37bde84f5456"
+        },
+        {
+         "id": "f21f7de7-31b4-4cc8-89a4-39c9eb6b7345",
+         "name": "Python",
+         "targetId": "fcb4d4b4-62c6-430b-96e3-37bde84f5456"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 2,
+     "description": null,
+     "rewardRange": {
+      "id": "9c43adae-a48d-4557-b3f0-ab61640ea363",
+      "p1MaxCents": 750000,
+      "p1MinCents": 550000,
+      "p2MaxCents": 350000,
+      "p2MinCents": 250000,
+      "p3MaxCents": 150000,
+      "p3MinCents": 75000,
+      "p4MaxCents": 50000,
+      "p4MinCents": 25000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p>The ability to bypass our safeguards against abuse on our platform.</p>\n\n<p>We reward submissions that demonstrate a meaningful bypass of OpenAI rate limits or platform controls that enables sustained usage at significant scale beyond intended limits. Findings that do not demonstrate a scalable bypass of rate limits are out of scope for financial reward. Rate limit bypass issues must demonstrate at least <strong>1,000 completions from the latest model generation across no more than five accounts within one day on our Sol model</strong> (any reasoning level).</p>\n\n<ul>\n<li><strong>In Scope:</strong> Vulnerabilities in our account integrity and platform integrity signals, e.g., automating mass creation of OpenAI accounts. Again, for conversation rate limit bypasses, these issues must demonstrate at least 1,000 completions from the latest model generation across no more than five accounts within one day on our Sol model (any reasoning level).</li>\n<li><strong>In Scope</strong> (already covered by the existing Security Bug Bounty scope): Exploits that allow users to access features, data, or functionalities beyond their authorized permissions — report via the Security Bug Bounty.<br></li>\n<li><strong>Out of Scope:</strong> Evading controls around geographic access restrictions.<br></li>\n<li><strong>Out of Scope:</strong> Testing that facilitates genuine fraud or requires social engineering, e.g., creating fraudulent OpenAI Startup Fund accounts.<br></li>\n</ul>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5500,
+       "max": 7500
+      },
+      "2": {
+       "min": 2500,
+       "max": 3500
+      },
+      "3": {
+       "min": 750,
+       "max": 1500
+      },
+      "4": {
+       "min": 250,
+       "max": 500
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "6c912843-f34e-40c8-8d63-1a19b18e028e",
+     "name": "Other Novel Abuse",
+     "targets": [
+      {
+       "id": "76d3a23b-b7f1-49bc-980f-86d0b14516ef",
+       "uri": "",
+       "name": "Other",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "621f6839-89db-4484-8282-008bbeea7a7a",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": [
+        {
+         "id": "d14cf1dd-8069-48ef-9a2b-779bf3a066f9",
+         "name": "Artificial Intelligence",
+         "targetId": "76d3a23b-b7f1-49bc-980f-86d0b14516ef"
+        }
+       ],
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": true,
+     "sortOrder": 3,
+     "description": null,
+     "rewardRange": {
+      "id": "9c43adae-a48d-4557-b3f0-ab61640ea363",
+      "p1MaxCents": 750000,
+      "p1MinCents": 550000,
+      "p2MaxCents": 350000,
+      "p2MinCents": 250000,
+      "p3MaxCents": 150000,
+      "p3MinCents": 75000,
+      "p4MaxCents": 50000,
+      "p4MinCents": 25000,
+      "p5MaxCents": null,
+      "p5MinCents": null,
+      "engagementMaxCents": null
+     },
+     "descriptionHtml": "<p><strong>In scope</strong><br><br>\nOutside of the examples listed above, if your report contains a flaw that facilitates a direct path to user harm and actionable, discrete remediation steps, we may still consider it in scope for rewards on a <strong>case-by-case basis</strong>.</p>",
+     "rewardRangeData": {
+      "1": {
+       "min": 5500,
+       "max": 7500
+      },
+      "2": {
+       "min": 2500,
+       "max": 3500
+      },
+      "3": {
+       "min": 750,
+       "max": 1500
+      },
+      "4": {
+       "min": 250,
+       "max": 500
+      },
+      "5": {
+       "min": null,
+       "max": null
+      }
+     },
+     "recentChangeFlags": null
+    },
+    {
+     "id": "df1e735a-9ea5-4a45-86c9-649c08d07920",
+     "name": "Content Issues",
+     "targets": [
+      {
+       "id": "dfba9c03-04ae-4fae-b794-9c0f390a5092",
+       "uri": "",
+       "name": "OpenAI models",
+       "category": "other",
+       "ipAddress": "",
+       "description": null,
+       "engagementBriefTargetGroupTarget": {
+        "id": "5a6ea7c5-b52c-43c2-8820-f6e49b95bc7a",
+        "sortOrder": 0
+       },
+       "sortOrder": 0,
+       "tags": null,
+       "recentChangeFlags": null
+      }
+     ],
+     "inScope": false,
+     "sortOrder": 4,
+     "description": null,
+     "rewardRange": null,
+     "descriptionHtml": "<p><strong>Out of scope</strong><br><br>\nThe model generates responses that violate OpenAI’s policy on disallowed content.</p>\n\n<ul>\n<li>All content/model response issues are out of scope — these issues are complex and not addressable through traditional security fixes. </li>\n</ul>",
+     "rewardRangeData": {},
+     "recentChangeFlags": null
+    }
+   ],
+   "resources": [],
+   "engagement": {
+    "id": "830cb151-cdb2-4836-ac25-14e946738a47",
+    "code": "openai-safety",
+    "state": "in_progress",
+    "endsAt": null,
+    "bountyId": "5a347e6e-cbbc-4c5f-8725-172a68154d90",
+    "startsAt": "2025-07-29T18:00:00Z"
+   },
+   "vrtScopeRules": [],
+   "engagementConfiguration": {
+    "participation": "open",
+    "crowdSelectionStrategy": "none"
+   }
+  },
+  "industryName": "Computer Software",
+  "methodologyName": null,
+  "logoUrl": "https://logos.bugcrowdusercontent.com/logos/eee6/48ca/31319ece/3b82dca429ba76bf224abbec781356a8_OpenAI-black-monoblossom.png",
+  "logoBackgroundColor": "#fff",
+  "displayDisclosureTerms": true,
+  "coordinatedDisclosure": true,
+  "collaborationEnabled": true,
+  "participation": "open",
+  "rewardAllocation": "pay_for_success",
+  "engagementTypeDetail": {
+   "iconVariant": "bug-bounty",
+   "productLabel": "Bug Bounty",
+   "timeboxed": false
+  },
+  "pausedReason": null,
+  "lastTransitionAt": "2025-07-29T18:00:00.236Z",
+  "cancellationReason": null,
+  "statusLabel": "In progress",
+  "routesPaths": {
+   "brief": "/engagements/openai-safety",
+   "changelogs": "/engagements/openai-safety/changelog",
+   "submissions": null,
+   "announcements": "/engagements/openai-safety/announcements",
+   "hallOfFame": "/engagements/openai-safety/hall_of_fames",
+   "crowdstream": "/engagements/openai-safety/crowdstream"
+  },
+  "announcementsCount": 3,
+  "knownIssuesEnabled": true,
+  "isDemo": false,
+  "serviceLevel": "Priority Triage",
+  "submitReportUrl": "/engagements/openai-safety/submissions/new",
+  "methodologyUrl": null,
+  "progressPercentage": 0,
+  "badgeVariant": null,
+  "userBannedFromEngagement": null,
+  "isLoggedIn": false,
+  "loginUrl": "/user/sign_in",
+  "scopedSubmissionsUrl": "/submissions?engagement%5B%5D=openai-safety&sort%5B%5D=submitted-desc",
+  "isFollowing": null,
+  "credentialsUrl": null,
+  "toggleSubscriptionUrl": "/openai-safety/engagement_subscribers",
+  "engagementChangelogsUrl": "/engagements/openai-safety/changelog",
+  "publishedAt": "2026-08-07T18:31:30.219Z",
+  "engagementChangelogUrl": "/engagements/openai-safety/changelog/3dc49551-ddac-4a19-8cb7-6a0f44ff144e",
+  "createUserFeedbacksUrl": "/engagements/openai-safety/feedbacks",
+  "engagementCrowdstreamUrl": "/engagements/openai-safety/crowdstream",
+  "acceptedSubmissionsEnabled": true,
+  "disclosedReportsEnabled": true,
+  "engagementsUrl": "/engagements",
+  "engagementPaymentDetailUrl": null,
+  "shouldShowHideButton": false,
+  "engagementHiddenData": {},
+  "totalRewardPool": null,
+  "vrtScopeRules": {
+   "data": []
+  },
+  "vrtVersion": "1.19.1",
+  "submissionThrottleHint": null,
+  "showIdVerificationAlert": false,
+  "identityVerificationSettingsUrl": "https://bugcrowd.com/h/settings/identity_verification",
+  "identityUrl": null
+ }
+}

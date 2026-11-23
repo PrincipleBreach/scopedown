@@ -1,0 +1,26 @@
+{
+  "name": "scopedown",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Copy HackerOne and Bugcrowd programs as agent-ready Markdown, and give AI agents your program access through your own browser.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "fixtures": "node scripts/capture-fixtures.mjs",
+    "lint": "node scripts/build.mjs --check",
+    "build": "node scripts/build.mjs",
+    "fonts": "node scripts/fonts.mjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.8",
+    "linkedom": "^0.18.15",
+    "web-ext": "^10.8.0"
+  },
+  "license": "MIT",
+  "author": "Principle Breach",
+  "homepage": "https://principlebreach.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrincipleBreach/scopedown.git"
+  }
+}

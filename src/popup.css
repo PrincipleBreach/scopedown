@@ -1,0 +1,109 @@
+/* ScopeDown popup. Tokens and shared parts live in base.css. */
+
+@import url("base.css");
+
+body { width: 352px; }
+main { display: grid; }
+
+/* Header: product left, maker right, a hairline with a red end. */
+.bar { position: relative; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+.bar::after { content: ""; position: absolute; right: 0; bottom: -1px; width: 6px; height: 1px; background: var(--mark); }
+.bar .maker { margin-left: auto; margin-right: -6px; }
+
+/* Program */
+.head { display: grid; gap: 12px; padding: 20px 16px 18px; min-width: 0; }
+h1 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 30px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.eyebrow { min-height: 16px; }
+.note { margin: 0; color: var(--muted); font-size: 14px; line-height: 21px; }
+
+/* Counts: three cells between hairlines. */
+.cells { display: grid; grid-template-columns: 1fr 0.8fr 1.3fr; margin: 0; border-block: 1px solid var(--line); }
+.cells > div { display: grid; gap: 6px; min-width: 0; padding: 12px 16px 13px; }
+.cells > div + div { border-left: 1px solid var(--line); }
+.cells dd { margin: 0; font-size: 22px; line-height: 26px; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Values the program makes you send: click to copy. */
+.rules { border-top: 0; }
+.rows .row.rule { grid-template-columns: 60px minmax(0, 1fr) auto; column-gap: 12px; padding: 11px 16px 12px; }
+.rule .k { color: var(--muted); font: 400 11px/18px var(--mono); text-transform: uppercase; letter-spacing: 0.04em; }
+.rule .v { min-width: 0; font: 400 12px/18px var(--mono); font-variant-ligatures: none; overflow-wrap: anywhere; }
+.rule .row-end { font: 400 11px/18px var(--mono); text-transform: uppercase; letter-spacing: 0.04em; opacity: 0; transition: opacity var(--t-tone) var(--ease), color var(--t-tone) var(--ease); }
+@media (hover: hover) { .rule:hover .row-end { opacity: 1; } }
+.rule:focus-visible .row-end, .rule.done .row-end { opacity: 1; color: var(--text); }
+
+/* Actions */
+.actions { display: grid; gap: 12px; padding: 16px 16px 16px; }
+.actions .action { min-height: 44px; }
+.more { display: flex; align-items: center; gap: 18px; }
+.more .link { gap: 6px; }
+.more .link kbd { border-color: var(--line); }
+#retry { margin: 0 16px 16px; }
+
+/* Preview */
+.preview { display: grid; gap: 8px; padding: 0 16px 16px; }
+.preview-head { display: flex; justify-content: space-between; }
+pre {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  font: 400 11px/17px var(--mono);
+  font-variant-ligatures: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Agent access: an ink band at the foot, like the site's footer. */
+.agent {
+  --text: var(--band-text);
+  --muted: var(--band-muted);
+  --line: var(--band-line);
+  --line-strong: #656760;
+  --tint: var(--band-deep);
+  --ground: var(--band);
+  --focus: var(--band-text);
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--band);
+  color: var(--text);
+}
+@media (prefers-color-scheme: dark) { .agent { border-top: 1px solid var(--band-line); } }
+.agent-row { display: flex; align-items: center; gap: 12px; }
+.agent-open { display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 0; text-decoration: none; }
+.agent-name { font-weight: 500; }
+@media (hover: hover) { .agent-open:hover .agent-name { text-decoration: underline; text-decoration-color: var(--band-index); text-underline-offset: 4px; } }
+.agent-state { min-width: 0; color: var(--muted); font: 400 11px/16px var(--mono); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-state[data-waiting] { color: var(--text); }
+.agent .switch { border-color: var(--band-line); background: var(--band-deep); }
+.agent .switch:checked { border-color: var(--band-text); background: var(--band-text); }
+.agent .switch:checked::after { background: var(--band); }
+.agent .cmd { border-color: var(--band-line); background: var(--band-deep); }
+
+/* States */
+[data-state="loading"] .preview,
+:is([data-state="error"], [data-state="unsupported"]) :is(.cells, .actions, .preview, .rules) { display: none; }
+[data-state="unsupported"] .eyebrow,
+[data-state="error"] .eyebrow { color: var(--muted); }
+
+/* Arrival: the content settles in once when the data lands. */
+@media (prefers-reduced-motion: no-preference) {
+  :is([data-state="ready"], [data-state="unsupported"], [data-state="error"]) .rise { animation: rise var(--t-settle) var(--ease) both; }
+  [data-state="ready"] .cells { animation-delay: 40ms; }
+  [data-state="ready"] .rules { animation-delay: 80ms; }
+  [data-state="ready"] .actions { animation-delay: 120ms; }
+}

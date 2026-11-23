@@ -14,17 +14,25 @@ Contributions are welcome.
 
 ## Local Development
 
-Node 20 or later.
+Node 22 or later, and the `zip` command for `npm run build`.
 
 ```bash
 npm install
 npm run fonts          # fetch Switzer from Fontshare (optional for development)
 npm test               # extension tests
-npm run lint           # Mozilla's validator
+npm run lint           # store manifest checks and Mozilla's validator
+npm run build          # store zips in dist/
 cd mcp && npm install && npm test
 ```
 
-Load the extension unpacked from the repository root (`chrome://extensions`, Developer mode, Load unpacked). The `key` in `manifest.json` keeps the development ID stable, which the bridge allowlists. Register the bridge from your checkout with `node mcp/bin/scopedown-mcp.js install`. For Firefox, run `npm run lint` and load `dist/firefox/manifest.json` from `about:debugging`; the repository manifest is the Chromium one.
+Load the extension unpacked from the repository root (`chrome://extensions`, Developer mode, Load unpacked). The `key` in `manifest.json` keeps the development ID stable, which the bridge allowlists. For Firefox 142 or later, run `npm run lint` and load `dist/firefox/manifest.json` from `about:debugging`; the repository manifest is the Chromium one.
+
+To run agents against your checkout instead of the npm release, register the bridge and the server from it:
+
+```bash
+node mcp/bin/scopedown-mcp.js install
+claude mcp add scopedown-dev -- node "$PWD/mcp/bin/scopedown-mcp.js"
+```
 
 `npm run fixtures` refreshes `test/fixtures` from live public programs. Never commit data from private programs.
 
@@ -42,11 +50,19 @@ The MCP server needs no change: platform ids are validated by the extension, and
 
 ## Releasing
 
-1. Set the version in `manifest.json`, `package.json`, `mcp/package.json`, `mcp/src/server.js` and `src/render.js`, and add a `CHANGELOG.md` entry.
-2. `npm test`, `npm run lint`, and `cd mcp && npm test && npm audit --omit=dev`.
-3. `npm run build` writes `dist/scopedown-<version>-chrome.zip` and `dist/scopedown-<version>-firefox.zip` with store-ready manifests and validates the Firefox build.
-4. Upload them to the Chrome Web Store and addons.mozilla.org. After the first Chrome Web Store upload, add the store's extension ID to `CHROMIUM_EXTENSION_IDS` in `mcp/src/paths.js` so the bridge accepts the store build.
-5. `cd mcp && npm publish --access public`.
+The extension and the MCP server version separately.
+
+**Extension**
+
+1. Set the version in `manifest.json`, `package.json` and `src/render.js`, and add a `## <version>` section to `CHANGELOG.md`.
+2. `npm test` and `npm run lint`.
+3. Commit, then push a signed tag: `git tag -s v<version> -m v<version> && git push origin v<version>`. The release workflow tests, builds both zips, and publishes a GitHub release with `SHA256SUMS`, build provenance and the changelog section as notes.
+4. Upload the release zips to the Chrome Web Store, Edge Add-ons and addons.mozilla.org. A store's first upload gives its extension ID: add it to `CHROMIUM_EXTENSION_IDS` in `mcp/src/paths.js` so the bridge accepts that build, and release the MCP server.
+
+**MCP server**
+
+1. Set the version in `mcp/package.json` and add a `## scopedown-mcp <version>` section to `CHANGELOG.md`.
+2. `cd mcp && npm test && npm audit --omit=dev && npm publish --access public`.
 
 ---
 

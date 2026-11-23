@@ -6,8 +6,8 @@ Your session never leaves the browser. The agent talks to this server, the serve
 
 ## Set up
 
-1. Install the ScopeDown extension and sign in to HackerOne or Bugcrowd in that browser.
-2. Register the bridge with your browsers:
+1. Install the [ScopeDown extension](https://github.com/PrincipleBreach/scopedown#install) and sign in to HackerOne or Bugcrowd in that browser.
+2. Register the bridge with your browsers. Each browser must have been opened at least once.
 
    ```sh
    npx @principlebreach/scopedown-mcp install
@@ -22,7 +22,7 @@ Your session never leaves the browser. The agent talks to this server, the serve
 
    Any other MCP client: run `npx -y @principlebreach/scopedown-mcp` as a stdio server.
 
-`scopedown-mcp doctor` shows which browsers are registered and connected. `scopedown-mcp uninstall` removes everything it installed.
+`npx @principlebreach/scopedown-mcp doctor` shows which browsers are registered and connected, `uninstall` removes everything it installed, and `--version` prints the version.
 
 ## Tools
 
@@ -54,11 +54,11 @@ Every operation is listed in the extension's activity log.
 
 ## Requirements
 
-Node 20 or later. Tested with Chrome and Brave on macOS. Edge, Arc, Chromium, Vivaldi and Firefox registration, and Linux and Windows installs, are implemented but not yet tested.
+Node 22 or later. Tested with Chrome and Brave on macOS. Edge, Arc, Chromium, Vivaldi and Firefox registration, and Linux and Windows installs, are implemented but not yet tested.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Source, issues and the security policy: [github.com/PrincipleBreach/scopedown](https://github.com/PrincipleBreach/scopedown).
 
 ---
 

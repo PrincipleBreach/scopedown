@@ -10,17 +10,30 @@ ScopeDown turns a HackerOne or Bugcrowd program into one clean Markdown file for
 
 ## Install
 
-1. Install the extension from the Chrome Web Store or addons.mozilla.org, or load this folder unpacked.
-2. Open a program page, click the ScopeDown icon (or press `Alt+Shift+S`), and press `Enter` to copy the Markdown.
+The Chrome Web Store listing is in review, and the Firefox add-on comes next. Until they are live, install a release build:
 
-To connect agents:
+- **Chrome, Brave, Edge and other Chromium browsers:** download `scopedown-<version>-chrome.zip` from the [latest release](https://github.com/PrincipleBreach/scopedown/releases/latest) and unzip it. Open `chrome://extensions`, turn on Developer mode, click **Load unpacked** and pick the folder.
+- **Firefox 142 or later:** download `scopedown-<version>-firefox.zip`, open `about:debugging`, click **This Firefox**, then **Load Temporary Add-on** and pick the zip. Firefox removes temporary add-ons when it restarts.
 
-```bash
-npx @principlebreach/scopedown-mcp install
-claude mcp add scopedown -- npx -y @principlebreach/scopedown-mcp
-```
+Open a program page, click the ScopeDown icon (or press `Alt+Shift+S`), and press `Enter` to copy the Markdown.
 
-Then click the ScopeDown icon and switch **Agents** on. Any MCP client can run `npx -y @principlebreach/scopedown-mcp` as a stdio server.
+### Connect agents
+
+1. Open the browser at least once and sign in to HackerOne or Bugcrowd there.
+2. Register the bridge with your browsers. For an unpacked Chromium build, add `--extension-id <id>` with the ID shown at `chrome://extensions`.
+
+   ```bash
+   npx @principlebreach/scopedown-mcp install
+   ```
+
+3. Click the ScopeDown icon and switch **Agents** on.
+4. Add the server to your agent. Any MCP client can run `npx -y @principlebreach/scopedown-mcp` as a stdio server.
+
+   ```bash
+   claude mcp add scopedown -- npx -y @principlebreach/scopedown-mcp
+   ```
+
+`npx @principlebreach/scopedown-mcp doctor` shows which browsers are registered and connected.
 
 ## The popup
 
@@ -80,13 +93,15 @@ Tested on Chrome and Brave on macOS. Firefox builds pass Mozilla's validator; Li
 
 ## Development
 
+Node 22 or later. `npm run build` also needs the `zip` command.
+
 ```bash
 npm install && npm test && npm run lint
-cd mcp && npm install && npm test
-npm run build
+npm run build                   # dist/scopedown-<version>-chrome.zip and -firefox.zip
+(cd mcp && npm install && npm test)
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Loading your checkout in a browser and running an agent against local code: [CONTRIBUTING.md](CONTRIBUTING.md#local-development).
 
 ## License
 

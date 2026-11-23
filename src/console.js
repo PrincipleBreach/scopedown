@@ -300,8 +300,9 @@ function rail(d, editable) {
 
   const say = {
     pending_review: direct
-      ? ['Waiting for you. ', `Submit files it on ${platform} under your account${files ? `, with ${files} file${files > 1 ? 's' : ''}` : ''}.`]
-      : [`Finished in ${platform}'s form. `, d.mode?.note || 'ScopeDown opens the form and lists each field to paste.'],
+      ? ['Waiting for you. ', `Submit report files it on ${platform} under your account${files ? `, with ${files} file${files > 1 ? 's' : ''}` : ''}.`]
+      // mode.note is written for the agent, so the user gets the platform's own finishing line.
+      : [`Finished in ${platform}'s form. `, adapter?.agent.prefill ? `ScopeDown fills it in a new tab. ${adapter.agent.prefill.finish}` : 'ScopeDown opens the form and lists each field to paste.'],
     submitting: [`Filing on ${platform}. `, 'This takes a few seconds.'],
     submitted: [`Filed ${ago(d.updated_at)}`, d.report?.id ? ` as report #${d.report.id}.` : '.'],
     rejected: ['You rejected it. ', d.review_note ? `Your note: ${d.review_note}` : 'The agent can revise it with update_draft.'],

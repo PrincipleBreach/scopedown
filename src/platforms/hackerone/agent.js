@@ -184,7 +184,8 @@ export async function myReports({ handle, limit = 25, cursor }) {
 export async function myReport(id, { cursor } = {}) {
   const data = await gql(`query ScopeDownReport($id: Int!, $after: String) {
     report(id: $id) {
-      _id title state substate created_at url vulnerability_information
+      _id title state substate created_at disclosed_at url vulnerability_information
+      summaries { category content }
       severity { rating score } weakness { name external_id } structured_scope { asset_identifier }
       team { handle name } reporter { username }
       activities(first: 100, after: $after) {
@@ -202,13 +203,18 @@ export async function myReport(id, { cursor } = {}) {
     reporter: r.reporter?.username || null, yours: Boolean(me) && r.reporter?.username === me,
     program: r.team?.handle, severity: r.severity?.rating || null, weakness: r.weakness?.name || null,
     asset: r.structured_scope?.asset_identifier || null,
-    description: cursor ? undefined : r.vulnerability_information,
+    description: cursor ? undefined : r.vulnerability_information || null,
+    disclosed_at: r.disclosed_at || null,
+    // A limited disclosure has no body; the summaries the team and the hunter published carry it.
+    summaries: cursor ? undefined : nonEmpty((r.summaries || []).filter((s) => s.content).map((s) => ({ by: s.category, content: s.content }))),
     thread: (r.activities?.nodes || []).filter((a) => a.message).map((a) => ({
       at: a.created_at, type: a.__typename, by: a.actor?.username || a.actor?.handle || null, message: a.message,
     })),
     thread_cursor: r.activities?.pageInfo?.hasNextPage ? r.activities.pageInfo.endCursor : null,
   };
 }
+
+const nonEmpty = (list) => (list.length ? list : undefined);
 
 // HackerOne ids arrive as GraphQL global ids ("gid://hackerone/Weakness/60", base64);
 // createReport takes the number at the end.

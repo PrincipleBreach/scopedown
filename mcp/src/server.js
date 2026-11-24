@@ -142,7 +142,7 @@ export function createServer(bridge = new Bridge()) {
 
   readTool('get_my_report', {
     title: 'Get one of my reports',
-    description: 'Returns one of the user\'s reports with its state, severity and the comment thread, so you can see what triage asked for. Long threads page with thread_cursor. A disclosed report by someone else can be read too: check yours, which is true only for the user\'s own reports. Supported where status shows report_threads (HackerOne).',
+    description: 'Returns one of the user\'s reports with its state, severity and the comment thread, so you can see what triage asked for. Long threads page with thread_cursor. A disclosed report by someone else can be read too: check yours, which is true only for the user\'s own reports. A limited disclosure has no description; its summaries hold what was published. Supported where status shows report_threads (HackerOne).',
     inputSchema: {
       platform,
       id: z.string().regex(/^[\w-]{1,40}$/).describe('Report id, as in hackerone.com/reports/<id>.'),

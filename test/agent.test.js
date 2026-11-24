@@ -67,7 +67,9 @@ function answerGraphql(query, variables) {
   if (/team_weaknesses/.test(query)) return { team: { team_weaknesses: { total_count: 1, nodes: [{ instruction: null, weakness: { id: Buffer.from('gid://hackerone/Weakness/60').toString('base64'), name: 'Cross-site Scripting (XSS) - Stored', external_id: 'cwe-79' } }] } } };
   if (/me \{ username/.test(query)) return { me: { username: 'tester' } };
   if (/ScopeDownReport\(/.test(query)) {
-    return { report: { _id: String(variables.id), title: 'A report', substate: 'triaged', created_at: '2026-11-01T00:00:00Z', url: `https://hackerone.com/reports/${variables.id}`, vulnerability_information: 'x', reporter: { username: variables.id === 1 ? 'tester' : 'someone-else' }, team: { handle: 'security' }, activities: { pageInfo: { hasNextPage: false }, nodes: [] } } };
+    return { report: { _id: String(variables.id), title: 'A report', substate: 'triaged', created_at: '2026-11-01T00:00:00Z', url: `https://hackerone.com/reports/${variables.id}`, vulnerability_information: variables.id === 1 ? 'x' : '', reporter: { username: variables.id === 1 ? 'tester' : 'someone-else' }, team: { handle: 'security' },
+      // A limited disclosure: no body, only the summaries the two sides published.
+      disclosed_at: variables.id === 1 ? null : '2026-11-10T00:00:00Z', summaries: variables.id === 1 ? [] : [{ category: 'team', content: 'Fixed in 2.1.' }, { category: 'researcher', content: 'SSRF via the recordings endpoint.' }, { category: 'researcher', content: '' }], activities: { pageInfo: { hasNextPage: false }, nodes: [] } } };
   }
   if (/ScopeDownRequirements/.test(query)) {
     // "formonly" stands in for programs like PayPal or Uber: required custom fields.
@@ -551,6 +553,10 @@ test('get_my_report says whose report it is', async () => {
   const other = (await dispatch('get_my_report', { platform: 'hackerone', id: '2' })).result;
   assert.equal(other.yours, false);
   assert.equal(other.reporter, 'someone-else');
+  // A limited disclosure has no body; the published summaries carry the write-up.
+  assert.equal(other.disclosed_at, '2026-11-10T00:00:00Z');
+  assert.deepEqual(other.summaries, [{ by: 'team', content: 'Fixed in 2.1.' }, { by: 'researcher', content: 'SSRF via the recordings endpoint.' }]);
+  assert.equal(mine.summaries, undefined, 'an undisclosed report has no summaries to show');
 });
 
 test('an HTTP error with a JSON body is an error, never an empty list or a sign-out', async () => {

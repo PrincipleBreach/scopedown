@@ -116,7 +116,10 @@ globalThis.chrome = {
     async executeScript({ func, args }) {
       if (func.name === 'fetchInPage' && args.length === 1) {
         requests.push({ kind: 'bc-program', code: args[0] });
-        return [{ result: structuredClone(tesla) }];
+        // Every engagement reads as the Tesla brief, under its own name.
+        const brief = structuredClone(tesla);
+        if (args[0] !== 'tesla') brief.brief.data.brief.name = args[0][0].toUpperCase() + args[0].slice(1).replace(/-/g, ' ');
+        return [{ result: brief }];
       }
       if (func.name === 'fetchInPage' && args[0] === 'refused') return [{ result: { error: 'HackerOne API returned HTTP 403.' } }];
       if (func.name === 'fetchInPage' && args[0] === 'ghost') return [{ result: { error: 'No program "ghost" is visible to this account.', reason: 'not_found' } }];
@@ -482,16 +485,20 @@ async function pageThrough(op, args, key) {
 
 test('Bugcrowd: your submissions page in order, with no gaps or repeats, drafts excluded', async () => {
   bcSubmissions.length = 0;
-  for (let i = 1; i <= 60; i++) bcSubmissions.push({ reference_number: `r-${i}`, caption: `Finding ${i}`, substate: 'triaged', engagement_name: i % 2 ? 'Tesla' : 'Okta', engagement_code: i % 2 ? 'tesla' : 'okta', submission_url: `/submissions/r-${i}` });
+  // As Bugcrowd serves them: the engagement's name, never its code. Okta also runs an "Okta labs" engagement.
+  for (let i = 1; i <= 60; i++) bcSubmissions.push({ reference_number: `r-${i}`, caption: `Finding ${i}`, substate: 'triaged', engagement_name: i % 2 ? 'Tesla' : (i % 3 ? 'Okta' : 'Okta labs'), program_name: i % 2 ? 'Tesla' : 'Okta', submission_url: `/submissions/r-${i}` });
   bcSubmissions.splice(3, 0, { reference_number: 'draft-1', caption: 'Unsent', draft: true });
   const { seen, last } = await pageThrough('list_my_reports', { limit: 7 }, 'reports');
   assert.deepEqual(seen.map((r) => r.id), Array.from({ length: 60 }, (_, i) => `r-${i + 1}`));
   assert.equal(last.total, 60);
 
-  // A program filter matches the engagement code exactly, and returns codes get_program takes.
+  assert.ok(last.reports.every((r) => r.program === null && r.program_name), 'unfiltered rows name the engagement');
+
+  // A program filter matches the engagement's own name exactly, and returns the code get_program takes.
   const okta = (await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'okta', limit: 100 })).result.bugcrowd;
-  assert.equal(okta.reports.length, 30);
-  assert.ok(okta.reports.every((r) => r.program === 'okta'));
+  assert.equal(okta.reports.length, 20);
+  assert.ok(okta.reports.every((r) => r.program === 'okta' && r.program_name === 'Okta'));
+  assert.equal((await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'okta-labs', limit: 100 })).result.bugcrowd.reports.length, 10);
   assert.equal(okta.total, undefined, 'a filtered page does not claim the unfiltered total');
   assert.equal((await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'ok', limit: 100 })).result.bugcrowd.reports.length, 0);
   bcSubmissions.length = 0;

@@ -152,10 +152,11 @@ export async function myReports({ handle, limit = 25, cursor }) {
   // submission, so a page smaller than 25 skips nothing. A filter by program reads up to 4 pages.
   if (cursor && !/^\d+$/.test(cursor)) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
   let offset = Number(cursor || 0);
-  const want = handle?.toLowerCase();
-  // The engagement's code, as in bugcrowd.com/engagements/<code>. Bugcrowd leaves it out for
-  // engagements it does not disclose, so the path is the fallback.
-  const codeOf = (s) => String(s.engagement_code || s.engagement_path?.split('/').filter(Boolean).pop() || '').toLowerCase();
+  // A submission names its engagement but not the engagement's code, so a filter by code
+  // matches the name the engagement's brief gives. That also tells "Okta" from "Okta labs".
+  const code = handle?.toLowerCase();
+  const nameKey = (v) => String(v || '').trim().toLowerCase();
+  const want = code ? nameKey((await program(code)).name) : null;
   const rows = [];
   let total = 0;
   for (let read = 0; read < (want ? 4 : 1 + Math.ceil(limit / 25)) && rows.length < limit; read++) {
@@ -164,13 +165,13 @@ export async function myReports({ handle, limit = 25, cursor }) {
     const batch = body.submissions || [];
     for (const s of batch) {
       offset++;
-      if (want && codeOf(s) !== want) continue;
+      if (want && nameKey(s.engagement_name || s.program_name) !== want) continue;
       rows.push({
         platform: 'bugcrowd',
         id: s.reference_number,
         title: s.caption || s.title,
         state: s.substate,
-        program: codeOf(s) || null,
+        program: code || null,
         program_name: s.engagement_name || s.program_name || null,
         created_at: s.submitted_at || s.created_at,
         url: s.submission_url ? `${BC}${s.submission_url}` : null,

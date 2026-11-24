@@ -41,7 +41,7 @@ claude mcp add scopedown-dev -- node "$PWD/mcp/bin/scopedown-mcp.js"
 A platform is one folder under `src/platforms/<id>/`. Shared code does not change.
 
 1. `program.js`: `match(url)` returns the program handle for the platform's program URLs; `fetchInPage(...)` runs inside the platform tab and returns raw program data; `normalize(raw, { fetchedAt })` returns the shared program shape (see the HackerOne and Bugcrowd versions).
-2. `agent.js`: the agent operations, built only from fixed requests through `runInPlatform(ORIGIN, fn, args)` and `pageRequest`. Required: `account`, `program`, `listPrograms`, `weaknesses`, `resolveWeakness`, `requirements`, `myReports`, `findFiled`, `formUrl`, `formFields`. Optional: `myReport`, `disclosed`, `file` (direct filing; without it, drafts are finished in the platform's form), `severityFor`, `prefill` (`{ func, args(draft, files) }`: fills the platform's own form in the tab the hand-off opens; `func` is self-contained and returns `{ filled, missed }` or `{ error }`; it must never submit).
+2. `agent.js`: the agent operations, built only from fixed requests through `runInPlatform(ORIGIN, fn, args)` and `pageRequest`. Required: `account`, `program`, `listPrograms`, `weaknesses`, `resolveWeakness`, `requirements`, `myReports`, `findFiled`, `formUrl`, `formFields`. Optional: `myReport`, `disclosed`, `file` (direct filing; without it, drafts are finished in the platform's form), `severityFor`, `prefill` (`{ func, args(draft, files) }`: fills the platform's own form in the tab the hand-off opens; `func` is self-contained and returns `{ filled, missed }` or `{ error }`; it must never submit), `watch` (`{ list, signals, scopes, due?, rotate? }`: finds new and changed scope; see [ARCHITECTURE.md](ARCHITECTURE.md#scope-watch). `list` must throw rather than return a partial list, and a failed read must come back as `{ error }`, so nothing looks removed by mistake).
 3. `index.js`: the adapter descriptor with `id`, `label`, `origin` and `weaknessLabel`.
 4. Register it in `src/platforms/index.js` and add its origin to `optional_host_permissions` in `manifest.json`.
 5. Capture public fixtures and add labeled scope cases. `test/adapters.test.js` checks the contract for every registered adapter.
@@ -66,4 +66,4 @@ The extension and the MCP server version separately.
 
 ---
 
-<sub>Built by <a href="https://principlebreach.com">Principle Breach</a> — offensive security research.</sub>
+<sub>Built by <a href="https://principlebreach.com">Principle Breach</a>. Offensive security research.</sub>

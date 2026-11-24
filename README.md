@@ -59,12 +59,24 @@ YAML front matter; key rules quoted from the policy (required headers, test acco
 | `list_programs` | Programs you can submit to, private invitations, search, paging | Accepted private invitations, search, paging |
 | `get_program` | Scope and policy as Markdown or JSON, public or private | Same, from the engagement brief |
 | `check_scope` | Verdict per host, URL, IP or CIDR | Same, including `{subdomain}` targets |
+| `list_scope_changes` | Assets added, removed or changed on every program you can submit to, and new invitations, dated by HackerOne | Same, dated by the brief version that made the change |
 | `get_report_requirements` | Required fields, the program's custom fields, assets, filing route | Required fields, targets, quota, filing route |
 | `get_weaknesses` | The program's weaknesses (CWE) | VRT entries by full id with priority P1 to P5 |
 | `search_disclosed_reports` | Hacktivity | Not available on Bugcrowd |
 | `list_my_reports`, `get_my_report` | Your reports and their threads | Your submissions |
 | `draft_report`, `update_draft`, `attach_file`, `remove_attachment` | Drafts with evidence, validated against the program | Same |
 | `get_draft`, `list_drafts` | Outcome, waiting up to 10 minutes for your decision | Same |
+
+### Fresh scope
+
+New scope is where nobody has looked yet. ScopeDown checks every program you can submit to, public and private, and records what changed:
+
+- **What:** assets added, removed, or changed (in scope, bounty eligibility, max severity, group, notes), new invitations and launches, and programs you lost.
+- **When:** the platform's own date where it keeps one. HackerOne dates every asset; Bugcrowd dates every version of a brief. The first check already lists what the platforms added in the last 30 days.
+- **How fast:** about 30 seconds for 750 HackerOne programs, a minute the first time. Bugcrowd allows one request a second: its first check takes about 10 minutes for 300 engagements, then public engagements are rechecked at most every 2 hours and private ones every check.
+- **Where:** the console's **Scope** page groups changes by program with filters (kind, period, platform, asset type, private or public, in scope, bounty, search) and copies new targets one per line. Agents get the same through `list_scope_changes`. Settings can check every 30 minutes and notify you about new in-scope assets.
+
+A removal is only recorded from a complete read, so a failed request or an expired session never makes scope look gone.
 
 ### How a report gets filed
 
@@ -83,7 +95,7 @@ YAML front matter; key rules quoted from the policy (required headers, test acco
 
 ## Privacy and permissions
 
-Nothing is sent to Principle Breach or anyone else: no analytics, no remote code, no AI calls. Requests go from your browser to the platform, with your session. Copying a program needs only `activeTab` and `scripting`; agent access asks for `nativeMessaging`, `notifications` and the two platform sites when you switch it on. Details: [PRIVACY.md](PRIVACY.md). How it works and the security model: [ARCHITECTURE.md](ARCHITECTURE.md).
+Nothing is sent to Principle Breach or anyone else: no analytics, no remote code, no AI calls. Requests go from your browser to the platform, with your session. Copying a program needs only `activeTab` and `scripting`; agent access asks for `nativeMessaging`, `notifications` and the two platform sites when you switch it on. `alarms` runs the scope check every 30 minutes, only if you turn that on. Details: [PRIVACY.md](PRIVACY.md). How it works and the security model: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Platforms
 
@@ -109,4 +121,4 @@ MIT. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 
 ---
 
-<sub>Built by <a href="https://principlebreach.com">Principle Breach</a> — offensive security research.</sub>
+<sub>Built by <a href="https://principlebreach.com">Principle Breach</a>. Offensive security research.</sub>

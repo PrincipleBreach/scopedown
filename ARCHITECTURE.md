@@ -64,6 +64,7 @@ The extension answers with `{ "type": "response", "id": "7f3c…", "ok": true, "
 | `list_programs` | reads | Programs the hunter can submit to; private only, query and paging |
 | `get_program` | reads | The ScopeDown Markdown and a structured summary |
 | `check_scope` | reads | Per-target verdict: in scope, out of scope or not listed, with the matching asset |
+| `list_scope_changes` | reads | Scope changes on every program, dated, with filters; checks the platforms first |
 | `get_report_requirements` | reads | Required fields, custom fields, assets, quota, filing route |
 | `get_weaknesses` | reads | HackerOne program weaknesses, Bugcrowd VRT entries by full id with priority |
 | `search_disclosed_reports` | reads | HackerOne Hacktivity, for duplicate checks |
@@ -73,6 +74,23 @@ The extension answers with `{ "type": "response", "id": "7f3c…", "ok": true, "
 | `get_draft`, `list_drafts` | reads | `get_draft` can wait up to 10 minutes for a decision |
 
 Every list returns `next_cursor` when there is more.
+
+## Scope watch
+
+`src/agent/watch.js` finds scope changes on every program the hunter can submit to. Adapters that support it have `agent.watch`: `list()` (every program, or an error: never a partial list), `signals(programs)` (a cheap change signal per program), `scopes(items)` (the assets now, as one or more dated snapshots), and optionally `due(record)` and `rotate`.
+
+A sweep, per platform:
+
+1. List the programs. Only a complete list can show that a program went away.
+2. Read the signal of each program due for a check.
+   - HackerOne: the asset count and the newest asset's `created_at`, for 40 programs per GraphQL request (`teams(where: { handle: { _in } })`, three requests per visit to the tab). `last_updated_at` is not used: assets are often added after it.
+   - Bugcrowd: the engagement's `changelog.json`, whose newest version id is the signal. Private engagements every sweep, public ones at most every 2 hours, one request a second.
+3. Read the scope of programs whose signal moved, new programs, and on the first sweep the programs the platform changed in the last 30 days. HackerOne also re-reads 30 programs per sweep, the ones read longest ago, because an edit to an existing asset moves no signal.
+   - HackerOne: five programs' first page per request, then larger programs page on their own.
+   - Bugcrowd: the version documents tagged `targets` since the stored one, plus the latest. Without a stored snapshot, the version before the oldest one read is the baseline.
+4. Compare with the stored snapshot by asset id (HackerOne's structured scope id, Bugcrowd's target id, both stable). Each change is dated by the platform where it can be (`created_at`, `updated_at`, or the brief version's `publishedAt`) and otherwise by the sweep. A partial read records no removals.
+
+Snapshots, events and per-platform state live in the IndexedDB database `scopedown-watch`. Events are kept 180 days, 20,000 at most. A sweep from the last 10 minutes is reused. `list_scope_changes` starts a sweep and waits up to 45 seconds per request; the MCP server polls until it ends or 150 seconds pass. With the Settings switch on, an alarm runs a sweep every 30 minutes and notifies about new in-scope assets and programs.
 
 ## Evidence files
 
@@ -92,8 +110,8 @@ Draft states: `pending_review`, then `submitting` and `submitted`; or `rejected`
 
 ## Console
 
-`src/console.html` is the hunter's side: drafts with filters and paging, a draft page with a rendered preview and an editor, evidence, history, the activity log, and settings (agent access per platform, auto-submit, setup checklist, local data). Agent-written Markdown is rendered into DOM nodes, never through `innerHTML`, with links limited to http(s) and remote images shown as links.
+`src/console.html` is the hunter's side: drafts with filters and paging, a draft page with a rendered preview and an editor, evidence, history, the activity log, the Scope page (changes grouped by program, with filters in the URL, live progress while a check runs, and new targets copied one per line), and settings (agent access per platform, the scope watch timer, auto-submit, setup checklist, local data). Agent-written Markdown is rendered into DOM nodes, never through `innerHTML`, with links limited to http(s) and remote images shown as links.
 
 ---
 
-<sub>Built by <a href="https://principlebreach.com">Principle Breach</a> — offensive security research.</sub>
+<sub>Built by <a href="https://principlebreach.com">Principle Breach</a>. Offensive security research.</sub>

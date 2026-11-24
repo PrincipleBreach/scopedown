@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Scope watch
+- New `list_scope_changes` tool: assets added, removed or changed on every program you can submit to, public and private, plus new invitations and programs you lost. Dated by HackerOne's asset dates and Bugcrowd's brief versions; the first check lists the last 30 days.
+- Filters across every program: platform, program, period, kind of change, asset type (named the same on both platforms), in scope, bounty, minimum severity, private or public, and words. Results can be grouped by program.
+- The console has a Scope page with the same filters, live progress, and new targets copied one per line.
+- Settings can check every 30 minutes and notify you about new in-scope assets (needs the `alarms` permission, which shows no prompt).
+- A removal is only recorded from a complete read. An expired Bugcrowd session, a timeout or a rate limit never makes scope look gone.
+- Agent requests can run several platform requests in one visit to the tab, three at a time.
+
 ## 1.0.1
 
 HackerOne

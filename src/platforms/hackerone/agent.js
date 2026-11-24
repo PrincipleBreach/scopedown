@@ -185,7 +185,6 @@ export async function myReport(id, { cursor } = {}) {
   const data = await gql(`query ScopeDownReport($id: Int!, $after: String) {
     report(id: $id) {
       _id title state substate created_at disclosed_at url vulnerability_information
-      summaries { category content }
       severity { rating score } weakness { name external_id } structured_scope { asset_identifier }
       team { handle name } reporter { username }
       activities(first: 100, after: $after) {
@@ -198,6 +197,9 @@ export async function myReport(id, { cursor } = {}) {
   if (!r) throw new RunnerError('not_found', `Report ${id} is not visible to this account.`);
   // Disclosed reports by other hunters are readable too, so say whose this is.
   const me = (await account()).username;
+  // GraphQL lists no summaries, so they come from the report's JSON page. A limited disclosure has
+  // no body, and its summaries are the whole write-up.
+  const summaries = r.disclosed_at && !cursor ? await disclosedSummaries(r._id) : undefined;
   return {
     platform: 'hackerone', id: r._id, title: r.title, state: r.substate, created_at: r.created_at, url: r.url,
     reporter: r.reporter?.username || null, yours: Boolean(me) && r.reporter?.username === me,
@@ -206,7 +208,7 @@ export async function myReport(id, { cursor } = {}) {
     description: cursor ? undefined : r.vulnerability_information || null,
     disclosed_at: r.disclosed_at || null,
     // A limited disclosure has no body; the summaries the team and the hunter published carry it.
-    summaries: cursor ? undefined : nonEmpty((r.summaries || []).filter((s) => s.content).map((s) => ({ by: s.category, content: s.content }))),
+    summaries,
     thread: (r.activities?.nodes || []).filter((a) => a.message).map((a) => ({
       at: a.created_at, type: a.__typename, by: a.actor?.username || a.actor?.handle || null, message: a.message,
     })),
@@ -214,7 +216,12 @@ export async function myReport(id, { cursor } = {}) {
   };
 }
 
-const nonEmpty = (list) => (list.length ? list : undefined);
+async function disclosedSummaries(id) {
+  const out = await runInPlatform(ORIGIN, pageRequest, [{ path: `/reports/${id}.json`, accept: 'application/json' }]);
+  if (out?.error || out?.status !== 200 || !Array.isArray(out.body?.summaries)) return undefined;
+  const list = out.body.summaries.filter((s) => s.content).map((s) => ({ by: s.category, content: s.content }));
+  return list.length ? list : undefined;
+}
 
 // HackerOne ids arrive as GraphQL global ids ("gid://hackerone/Weakness/60", base64);
 // createReport takes the number at the end.

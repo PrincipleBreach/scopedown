@@ -360,6 +360,43 @@ export function resolveAsset(prog, input, assets = [], required = false) {
   return { identifier: asset.identifier, id };
 }
 
+// HackerOne checks custom fields with Ruby regular expressions. JavaScript reads Ruby's string
+// anchors (\A, \z, \Z) and hex class (\h) as plain letters, so those are translated. A pattern
+// that still does not compile is left for HackerOne to check when the report is filed.
+export function rubyPattern(source) {
+  let src = String(source);
+  let flags = 'm'; // Ruby's ^ and $ always match at line breaks
+  const lead = src.match(/^\(\?([imx]+)\)/);
+  if (lead) {
+    if (lead[1].includes('x')) return null;
+    if (lead[1].includes('i')) flags += 'i';
+    if (lead[1].includes('m')) flags += 's'; // Ruby's m lets . match a line break
+    src = src.slice(lead[0].length);
+  }
+  let out = '';
+  let inClass = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '\\' && i + 1 < src.length) {
+      const n = src[++i];
+      if (n === 'h') out += inClass ? '0-9a-fA-F' : '[0-9a-fA-F]';
+      else if (n === 'A' && !inClass) out += '(?<![\\s\\S])';
+      else if (n === 'z' && !inClass) out += '(?![\\s\\S])';
+      else if (n === 'Z' && !inClass) out += '(?=\\n?(?![\\s\\S]))';
+      else out += c + n;
+      continue;
+    }
+    if (c === '[') inClass = true;
+    else if (c === ']') inClass = false;
+    out += c;
+  }
+  try {
+    return new RegExp(out, flags);
+  } catch {
+    return null;
+  }
+}
+
 // Custom report fields a program defines. Values may be keyed by the field's key or label.
 // Required fields must be present; list values must be one of the options.
 export function customFields(defs, given = {}) {
@@ -385,7 +422,9 @@ export function customFields(defs, given = {}) {
       if (!match) throw new RunnerError('bad_field', `"${def.label}" must be one of: ${def.options.join(', ')}.`);
       v = match;
     }
-    if (def.pattern && typeof v === 'string' && !new RegExp(def.pattern).test(v)) throw new RunnerError('bad_field', `"${def.label}" does not match the program's format.`);
+    if (def.pattern && typeof v === 'string' && rubyPattern(def.pattern)?.test(v) === false) {
+      throw new RunnerError('bad_field', `"${def.label}" does not match the program's format${def.pattern_hint ? `: ${def.pattern_hint}` : '.'}`);
+    }
     if (def.type === 'checkbox' && def.required && v !== true) missing.push(def);
     else out.push({ key: def.key, label: def.label, value: v });
   }

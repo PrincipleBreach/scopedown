@@ -75,6 +75,8 @@ function answerGraphql(query, variables) {
       { __typename: 'CustomFieldAttributesText', key: 'k_ip', label: 'Researcher IP Address', required: true, field_type: 'Text', helper_text: 'Testing IP', internal: false, regex: null },
       { __typename: 'CustomFieldAttributesList', key: 'k_fraud', label: 'Fraud Related?', required: true, field_type: 'List', items: ['Yes', 'No'], internal: false },
       { __typename: 'CustomFieldAttributesCheckbox', key: 'k_terms', label: 'Terms and Conditions', required: true, field_type: 'Checkbox', checkbox_text: 'I accept', internal: false },
+      // HackerOne validates with Ruby, so its patterns use Ruby's anchors.
+      { __typename: 'CustomFieldAttributesText', key: 'k_ticket', label: 'Ticket', required: false, field_type: 'Text', helper_text: null, internal: false, regex: '\\A[A-Z]{2,5}-\\d+\\z', error_message: 'Use a ticket id such as SEC-123.' },
     ];
     return { team: { submission_state: 'open', i_can_see_report_submit_button: true, i_must_verify_identity_to_submit: false, submission_requirements: { asset_required: false, weakness_required: variables.handle === 'formonly' }, custom_field_attributes: { nodes: custom } } };
   }
@@ -372,7 +374,7 @@ test('get_report_requirements reports the filing route and the program\'s custom
   assert.ok(plain.result.assets.some((a) => a.identifier === 'hackerone.com' && typeof a.id === 'string'));
   const form = await dispatch('get_report_requirements', { platform: 'hackerone', handle: 'formonly' });
   assert.equal(form.result.filing, 'platform_form');
-  assert.deepEqual(form.result.custom_fields.map((c) => [c.label, c.type, c.required]), [['Researcher IP Address', 'text', true], ['Fraud Related?', 'list', true], ['Terms and Conditions', 'checkbox', true]]);
+  assert.deepEqual(form.result.custom_fields.map((c) => [c.label, c.type, c.required]), [['Researcher IP Address', 'text', true], ['Fraud Related?', 'list', true], ['Terms and Conditions', 'checkbox', true], ['Ticket', 'text', false]]);
   assert.deepEqual(form.result.custom_fields[1].options, ['Yes', 'No']);
   assert.equal(form.result.fields.weakness.required, true);
 });
@@ -664,4 +666,20 @@ test('the affected URL must sit inside the program scope', async () => {
   assert.equal(unlisted.error.code, 'not_in_scope');
   const ok = await dispatch('draft_report', { ...report, title: 'URL inside the scope of the program', url: 'https://hackerone.com/reports/1' }, null);
   assert.equal(ok.ok, true, JSON.stringify(ok.error));
+});
+
+test('custom field patterns are read as Ruby reads them, the way HackerOne checks them', async () => {
+  const req = (await dispatch('get_report_requirements', { platform: 'hackerone', handle: 'formonly' })).result;
+  const ticket = req.custom_fields.find((f) => f.key === 'k_ticket');
+  assert.equal(ticket.pattern, '\\A[A-Z]{2,5}-\\d+\\z');
+  assert.equal(ticket.pattern_hint, 'Use a ticket id such as SEC-123.');
+
+  const check = (pattern, value, hint) => drafts.customFields([{ key: 'k', label: 'Field', type: 'text', pattern, pattern_hint: hint }], { k: value });
+  assert.deepEqual(check('\\A[A-Z]{2,5}-\\d+\\z', 'SEC-123'), [{ key: 'k', label: 'Field', value: 'SEC-123' }]);
+  assert.throws(() => check('\\A[A-Z]{2,5}-\\d+\\z', 'SEC-123 extra', 'Use a ticket id such as SEC-123.'), { code: 'bad_field', message: '"Field" does not match the program\'s format: Use a ticket id such as SEC-123.' });
+  assert.ok(check('(?i)\\Ayes|no\\z', 'YES'), 'a leading (?i) is case-insensitive');
+  assert.ok(check('\\A\\h{8}\\z', 'deadBEEF'), '\\h is a hex digit');
+  assert.ok(check('\\A[\\h-]+\\z', 'dead-beef'), '\\h inside a class');
+  assert.ok(check('\\A\\\\A\\z', '\\A'), 'an escaped backslash before A is not an anchor');
+  assert.ok(check('(?<x', 'anything'), 'a pattern JavaScript cannot read is left for HackerOne to check');
 });

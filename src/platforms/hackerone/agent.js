@@ -312,7 +312,7 @@ export async function requirements(handle) {
         custom_field_attributes(first: 50) { nodes { __typename
           ... on CustomFieldAttributeInterface { key label required field_type helper_text internal }
           ... on CustomFieldAttributesList { items }
-          ... on CustomFieldAttributesText { regex }
+          ... on CustomFieldAttributesText { regex error_message }
           ... on CustomFieldAttributesCheckbox { checkbox_text }
         } }
       }
@@ -327,6 +327,7 @@ export async function requirements(handle) {
       type: String(n.field_type || 'text').toLowerCase(),
       options: n.items?.length ? n.items : undefined,
       pattern: n.regex || undefined,
+      pattern_hint: (n.regex && n.error_message) || undefined,
       help: [n.helper_text, n.checkbox_text].filter(Boolean).join(' ') || undefined,
     }));
     const blocked = t.submission_state !== 'open' ? `Submissions to this program are ${t.submission_state}.`

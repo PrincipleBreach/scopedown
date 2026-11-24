@@ -4,7 +4,7 @@
 
 import { htmlToMarkdown, nestHeadings, tableCell, tidyMarkdown } from './markdown.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.1';
 
 export function render(p, opts) {
   return build(p, opts).markdown;

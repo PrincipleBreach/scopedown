@@ -1,6 +1,6 @@
 {
   "name": "scopedown",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Copy HackerOne and Bugcrowd programs as agent-ready Markdown, and give AI agents your program access through your own browser.",
   "type": "module",

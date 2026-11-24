@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.0.1
+
+HackerOne
+- Agent requests no longer fail with HTTP 403 in ScopeDown's background tab: it reads the session's CSRF token from the site when the page has none.
+- `list_programs` with `private_only` pages through every private program. Unknown cursors are `bad_request`, and HTTP errors are errors, never an empty list or a sign-out.
+- `get_my_report` says whose report it is (`reporter`, `yours`). For another hunter's disclosed report it returns the published body, `disclosed_at`, and the team's and hunter's summaries, which are the whole write-up of a limited disclosure.
+- Custom field formats are checked the way HackerOne checks them (Ruby patterns such as `\A...\z`), and a mismatch quotes the program's own hint.
+
+Bugcrowd
+- `list_my_reports` pages through every submission with no gaps or repeats, drafts left out. A program filter matches the engagement exactly, by its name, and asks Bugcrowd to filter on its side.
+- `list_programs` search runs on Bugcrowd's side, so it covers every engagement, not one page of them.
+- `get_program` reads the engagement asked for, never a longer one that starts the same, and a missing engagement is `not_found`.
+
+Agent and drafts
+- A platform tab showing an error page is skipped. A background tab that reloads while a request runs is waited for and tried again, and a failed one is closed before another opens.
+- Submitting a draft checks it is the version you reviewed. If the agent changed it after you opened it, you are asked to read it again.
+- Drafts are stored one write at a time. Past 200, the oldest finished drafts are removed with their files.
+- Auto-submit stops, and says why in the draft's history, when an evidence file is refused. A file the agent replaced after a failed attempt is uploaded again, not reused.
+- `status` asks both platforms at once.
+
+## scopedown-mcp 1.0.2
+
+- With several browsers connected, the default one stays the same when a browser restarts.
+- Messages split inside a multi-byte character decode correctly.
+- On Windows, the host creates its folder on first run.
+- Tool descriptions: `get_my_report` explains `yours` and disclosed summaries, and `list_programs` says a page can be short, so page until `next_cursor` is null.
+
 ## scopedown-mcp 1.0.1
 
 - `scopedown-mcp --version` prints the version, and the help names it.
@@ -19,4 +46,4 @@ First public release.
 
 ---
 
-<sub>Built by <a href="https://principlebreach.com">Principle Breach</a> — offensive security research.</sub>
+<sub>Built by <a href="https://principlebreach.com">Principle Breach</a>. Offensive security research.</sub>

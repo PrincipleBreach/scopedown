@@ -22,6 +22,7 @@ globalThis.chrome = {
       return tab;
     },
     onUpdated: { addListener: (l) => updated.add(l), removeListener: (l) => updated.delete(l) },
+    get: async (id) => ({ id, status: 'complete' }),
     remove: async (id) => { removed.push(id); },
   },
   scripting: { executeScript: async (o) => [{ result: await hooks.page(o) }] },
@@ -62,4 +63,18 @@ test('a worker tab that shows an error page is closed before another one opens',
   }
   const open = created.filter((t) => !removed.includes(t.id));
   assert.equal(open.length, 1, `still open: ${open.map((t) => t.id)}`);
+});
+
+test('a worker tab whose page replaces itself mid-run is waited for and tried again', async () => {
+  hooks.tabs = () => [];
+  let calls = 0;
+  hooks.page = async () => {
+    if (++calls === 1) throw new Error('Frame with ID 0 was removed.');
+    return { status: 200 };
+  };
+  assert.deepEqual(await runInPlatform('https://hackerone.com', pageRequest, [{ path: '/graphql' }]), { status: 200 });
+  assert.equal(calls, 2);
+
+  hooks.page = async () => { throw new Error('Frame with ID 0 was removed.'); };
+  await assert.rejects(runInPlatform('https://hackerone.com', pageRequest, [{ path: '/graphql' }]), { code: 'platform', message: /could not run in its https:\/\/hackerone.com tab/ });
 });

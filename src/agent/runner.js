@@ -46,17 +46,24 @@ async function openWorker(origin) {
   if (workers[origin] != null) ext.tabs.remove(workers[origin]).catch(() => {});
   const tab = await ext.tabs.create({ url: origin + WORKER_PATH, active: false });
   workers[origin] = tab.id;
-  await new Promise((resolve) => {
+  await loaded(tab.id);
+  return tab.id;
+}
+
+// Resolves once the tab has finished loading, or after 15 seconds.
+function loaded(tabId) {
+  return new Promise((resolve) => {
     const done = () => {
       ext.tabs.onUpdated.removeListener(listener);
       clearTimeout(timer);
       resolve();
     };
-    const listener = (id, info) => { if (id === tab.id && info.status === 'complete') done(); };
+    const listener = (id, info) => { if (id === tabId && info.status === 'complete') done(); };
     const timer = setTimeout(done, 15_000);
     ext.tabs.onUpdated.addListener(listener);
+    // It may have finished before the listener was added.
+    ext.tabs.get(tabId).then((t) => { if (t.status === 'complete') done(); }, done);
   });
-  return tab.id;
 }
 
 function touchWorkers() {
@@ -98,7 +105,17 @@ export async function runInPlatform(origin, func, args = []) {
       }
     }
     const id = await openWorker(origin);
-    const out = await inject(id, func, args);
+    let out;
+    try {
+      out = await inject(id, func, args);
+    } catch {
+      // The page replaced itself while the function ran (a redirect or a challenge page).
+      await new Promise((r) => setTimeout(r, 500));
+      await loaded(id);
+      out = await inject(id, func, args).catch((e) => {
+        throw new RunnerError('platform', `ScopeDown could not run in its ${origin} tab: ${e.message}`);
+      });
+    }
     if (badTab(out)) throw new RunnerError('platform', out.error?.message || out.error);
     return out;
   });

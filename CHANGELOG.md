@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 Scope watch
 - New `list_scope_changes` tool: assets added, removed or changed on every program you can submit to, public and private, plus new invitations and programs you lost. Dated by HackerOne's asset dates and Bugcrowd's brief versions; the first check lists the last 30 days.
@@ -9,6 +9,12 @@ Scope watch
 - Settings can check every 30 minutes and notify you about new in-scope assets (needs the `alarms` permission, which shows no prompt).
 - A removal is only recorded from a complete read. An expired Bugcrowd session, a timeout or a rate limit never makes scope look gone.
 - Agent requests can run several platform requests in one visit to the tab, three at a time.
+
+## scopedown-mcp 1.1.0
+
+- `list_scope_changes`: what changed in the scope of every program the user can submit to, with filters for platform, program, period, kind of change, asset type, in scope, bounty, minimum severity, private or public, and words, optionally grouped by program. It waits for the extension's check in steps of 45 seconds, up to 150 seconds, and says when the check is still running.
+- The server instructions point agents to it for fresh attack surface.
+- Needs ScopeDown 1.1.0 in the browser.
 
 ## 1.0.1
 

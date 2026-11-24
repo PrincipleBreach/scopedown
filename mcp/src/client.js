@@ -110,7 +110,9 @@ export class Bridge {
     if (!all.length) {
       throw new BridgeError('no_browser', 'No browser is connected. Open the browser where you use HackerOne or Bugcrowd, click the ScopeDown icon, and switch Agents on.');
     }
-    if (!browser) return all[0];
+    // Socket names follow the host's process id, which changes when a browser restarts. The
+    // install id does not, so the default browser (and the drafts it holds) stays the same.
+    if (!browser) return all.reduce((a, b) => (String(b.extension.install) < String(a.extension.install) ? b : a));
     const want = browser.toLowerCase();
     const match = all.find((l) => [l.extension.install, l.extension.browser].some((v) => String(v || '').toLowerCase() === want));
     if (!match) throw new BridgeError('unknown_browser', `No connected browser called "${browser}". Connected: ${all.map(label).join(', ')}.`);

@@ -150,6 +150,7 @@ const submissionsPath = (offset) => `/submissions.json?offset[]=${offset}&sort[]
 export async function myReports({ handle, limit = 25, cursor }) {
   // Bugcrowd pages by offset, 25 at a time. The cursor is the offset of the next unread
   // submission, so a page smaller than 25 skips nothing. A filter by program reads up to 4 pages.
+  // The same filter always reads the same list, so its cursors stay valid between calls.
   if (cursor && !/^\d+$/.test(cursor)) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
   let offset = Number(cursor || 0);
   // A submission names its engagement but not the engagement's code, so a filter by code
@@ -157,10 +158,18 @@ export async function myReports({ handle, limit = 25, cursor }) {
   const code = handle?.toLowerCase();
   const nameKey = (v) => String(v || '').trim().toLowerCase();
   const want = code ? nameKey((await program(code)).name) : null;
+  // Bugcrowd's own filter (engagement[]=<code>) narrows the list on its side. The rows are still
+  // matched by name here, so if Bugcrowd ignores it the answer is the same, only slower. If it
+  // finds nothing, the code may not be what it expects, so the full list is read instead.
+  let filter = code ? `&engagement[]=${encodeURIComponent(code)}` : '';
   const rows = [];
   let total = 0;
   for (let read = 0; read < (want ? 4 : 1 + Math.ceil(limit / 25)) && rows.length < limit; read++) {
-    const body = await getJson(submissionsPath(offset));
+    let body = await getJson(submissionsPath(offset) + filter);
+    if (filter && !body.meta?.totalHits) {
+      filter = '';
+      body = await getJson(submissionsPath(offset));
+    }
     total = body.meta?.totalHits ?? 0;
     const batch = body.submissions || [];
     for (const s of batch) {

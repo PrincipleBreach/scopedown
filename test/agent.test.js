@@ -68,8 +68,8 @@ function answerGraphql(query, variables) {
   if (/me \{ username/.test(query)) return { me: { username: 'tester' } };
   if (/ScopeDownReport\(/.test(query)) {
     return { report: { _id: String(variables.id), title: 'A report', substate: 'triaged', created_at: '2026-11-01T00:00:00Z', url: `https://hackerone.com/reports/${variables.id}`, vulnerability_information: variables.id === 1 ? 'x' : '', reporter: { username: variables.id === 1 ? 'tester' : 'someone-else' }, team: { handle: 'security' },
-      // A limited disclosure: no body, only the summaries the two sides published.
-      disclosed_at: variables.id === 1 ? null : '2026-11-10T00:00:00Z', summaries: variables.id === 1 ? [] : [{ category: 'team', content: 'Fixed in 2.1.' }, { category: 'researcher', content: 'SSRF via the recordings endpoint.' }, { category: 'researcher', content: '' }], activities: { pageInfo: { hasNextPage: false }, nodes: [] } } };
+      // A limited disclosure: no body. Like the real API, GraphQL lists no summaries; the report's JSON page does.
+      disclosed_at: variables.id === 1 ? null : '2026-11-10T00:00:00Z', summaries: [], activities: { pageInfo: { hasNextPage: false }, nodes: [] } } };
   }
   if (/ScopeDownRequirements/.test(query)) {
     // "formonly" stands in for programs like PayPal or Uber: required custom fields.
@@ -92,12 +92,18 @@ let lastFiled = null;
 let httpError = null; // set to an HTTP status to make every pageRequest fail with a JSON body
 const bcSubmissions = [];
 const bcEngagements = { invite_only: [], open: [] };
+// How Bugcrowd treats engagement[]=<code>: 'code' filters by it, 'ignore' drops it, 'id' expects another value.
+const bcFilter = { mode: 'code', reads: 0 };
+const slug = (name) => String(name || '').toLowerCase().replace(/\s+/g, '-');
 function bugcrowdJson(path) {
   const url = new URL(path, 'https://bugcrowd.com');
   if (url.pathname === '/submissions.json') {
+    bcFilter.reads++;
     const offset = Number(url.searchParams.get('offset[]') || 0);
     const draft = url.searchParams.get('draft[]');
-    const list = bcSubmissions.filter((x) => draft === null || String(Boolean(x.draft)) === draft);
+    const engagement = url.searchParams.get('engagement[]');
+    const list = bcSubmissions.filter((x) => draft === null || String(Boolean(x.draft)) === draft)
+      .filter((x) => engagement === null || bcFilter.mode === 'ignore' || (bcFilter.mode === 'code' && slug(x.engagement_name) === engagement));
     return { submissions: list.slice(offset, offset + 25), meta: { totalHits: list.length } };
   }
   const page = Number(url.searchParams.get('page') || 1);
@@ -142,6 +148,9 @@ globalThis.chrome = {
         const req = args[0];
         if (req.path.startsWith('/submissions.json') || req.path.startsWith('/engagements.json')) {
           return [{ result: { status: 200, url: `https://bugcrowd.com${req.path}`, body: bugcrowdJson(req.path) } }];
+        }
+        if (req.path === '/reports/2.json') {
+          return [{ result: { status: 200, url: `https://hackerone.com${req.path}`, body: { id: 2, summaries: [{ category: 'team', content: 'Fixed in 2.1.' }, { category: 'researcher', content: 'SSRF via the recordings endpoint.' }, { category: 'researcher' }] } } }];
         }
         const query = req.json?.query || '';
         requests.push({ kind: 'request', path: req.path, query, variables: req.json?.variables });
@@ -503,6 +512,18 @@ test('Bugcrowd: your submissions page in order, with no gaps or repeats, drafts 
   assert.equal(okta.reports.length, 20);
   assert.ok(okta.reports.every((r) => r.program === 'okta' && r.program_name === 'Okta'));
   assert.equal((await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'okta-labs', limit: 100 })).result.bugcrowd.reports.length, 10);
+
+  // Bugcrowd filters by engagement on its side, so one read is enough. If it ignores the filter or
+  // expects another value, the rows are still right, only read the slow way.
+  for (const mode of ['code', 'ignore', 'id']) {
+    bcFilter.mode = mode;
+    bcFilter.reads = 0;
+    const out = (await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'okta', limit: 100 })).result.bugcrowd;
+    assert.equal(out.reports.length, 20, mode);
+    assert.equal(out.next_cursor, null, mode);
+    if (mode === 'code') assert.equal(bcFilter.reads, 1);
+  }
+  bcFilter.mode = 'code';
   assert.equal(okta.total, undefined, 'a filtered page does not claim the unfiltered total');
   assert.equal((await dispatch('list_my_reports', { platform: 'bugcrowd', handle: 'ok', limit: 100 })).result.bugcrowd.reports.length, 0);
   bcSubmissions.length = 0;

@@ -11,6 +11,8 @@
 //            prefill: { finish, func, args(draft, files) } fills the platform's own form in the tab
 //            the hand-off opens (func runs there, self-contained) and returns
 //            { filled: [field], missed: [reason] } or { error }
+//            watch: { list, signals, scopes, due?, rotate? } finds new and changed scope (see
+//            src/agent/watch.js)
 import hackerone from './hackerone/index.js';
 import bugcrowd from './bugcrowd/index.js';
 

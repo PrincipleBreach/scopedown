@@ -66,7 +66,7 @@ test('MCP tools reach the extension through the host, and errors come back as to
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [CLI], env: { ...process.env, SCOPEDOWN_HOME: home } }));
   try {
     const { tools } = await client.listTools();
-    assert.deepEqual(tools.map((t) => t.name).sort(), ['attach_file', 'check_scope', 'draft_report', 'get_draft', 'get_my_report', 'get_program', 'get_report_requirements', 'get_weaknesses', 'list_drafts', 'list_my_reports', 'list_programs', 'remove_attachment', 'search_disclosed_reports', 'status', 'update_draft']);
+    assert.deepEqual(tools.map((t) => t.name).sort(), ['attach_file', 'check_scope', 'draft_report', 'get_draft', 'get_my_report', 'get_program', 'get_report_requirements', 'get_weaknesses', 'list_drafts', 'list_my_reports', 'list_programs', 'list_scope_changes', 'remove_attachment', 'search_disclosed_reports', 'status', 'update_draft']);
     assert.ok(tools.find((t) => t.name === 'check_scope').annotations.readOnlyHint);
     assert.equal(tools.find((t) => t.name === 'draft_report').annotations.readOnlyHint, false);
 

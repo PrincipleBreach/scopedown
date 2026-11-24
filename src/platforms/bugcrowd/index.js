@@ -3,6 +3,7 @@
 // ScopeDown fills the form for the hunter instead, and no public disclosed-report search.
 import * as program from './program.js';
 import * as agent from './agent.js';
+import * as watch from './watch.js';
 
 export default {
   id: 'bugcrowd',
@@ -28,5 +29,11 @@ export default {
     formFields: agent.formFields,
     severityFor: agent.severityFor,
     prefill: agent.prefill,
+    watch: {
+      list: watch.list,
+      signals: watch.signals,
+      scopes: watch.scopes,
+      due: watch.due,
+    },
   },
 };

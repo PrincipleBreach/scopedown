@@ -105,6 +105,7 @@ export function normalize(raw, { fetchedAt }) {
       // "Website Testing" style tags only repeat the category; keep the tech stack tags.
       const tags = (t.tags || []).map((x) => x?.name?.trim()).filter((x) => x && !/ Testing$/i.test(x));
       scopes.push({
+        id: t.id || null,
         identifier: ident,
         location: [...new Set(locators)].join(' '),
         type: CATEGORY[t.category] || t.category || '',

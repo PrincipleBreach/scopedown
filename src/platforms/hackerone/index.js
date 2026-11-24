@@ -2,6 +2,7 @@
 // contract in ../index.js.
 import * as program from './program.js';
 import * as agent from './agent.js';
+import * as watch from './watch.js';
 
 export default {
   id: 'hackerone',
@@ -29,5 +30,11 @@ export default {
     findFiled: agent.findFiled,
     formUrl: agent.formUrl,
     formFields: agent.formFields,
+    watch: {
+      list: watch.list,
+      signals: watch.signals,
+      scopes: watch.scopes,
+      rotate: watch.rotate,
+    },
   },
 };

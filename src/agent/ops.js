@@ -7,6 +7,7 @@ import { checkScope } from './scope.js';
 import { RunnerError } from './runner.js';
 import { createDraft, updateDraft, waitForDecision, publicDraft, addAttachment, removeAttachment, stopAutoSubmit } from './drafts.js';
 import { beginUpload, addChunk, finishUpload, uploadDraft } from './files.js';
+import { sweep, waitSweep, sweepStatus, listEvents, byProgram, KINDS, CATEGORIES, SEVERITIES, BACKFILL_DAYS } from './watch.js';
 
 // Runs one step of an upload. If it fails, an auto-submit draft stops waiting for the file.
 async function failing(draftId, step) {
@@ -37,6 +38,24 @@ const v = {
     if (n === undefined) return fallback;
     if (!Number.isInteger(n) || n < min || n > max) throw new RunnerError('bad_request', `Expected a whole number from ${min} to ${max}.`);
     return n;
+  },
+  // "7d", "24h" or an ISO date, as an ISO timestamp.
+  when(x, fallback) {
+    if (x === undefined) return fallback;
+    const m = /^(\d{1,4})([hd])$/.exec(String(x));
+    const t = m ? Date.now() - Number(m[1]) * (m[2] === 'h' ? 3_600_000 : 86_400_000) : Date.parse(x);
+    if (typeof x !== 'string' || x.length > 40 || !Number.isFinite(t)) throw new RunnerError('bad_request', 'Times are "7d", "24h" or an ISO date such as 2026-11-01.');
+    return new Date(t).toISOString();
+  },
+  oneOf(x, list, name) {
+    if (x === undefined) return undefined;
+    if (!list.includes(x)) throw new RunnerError('bad_request', `${name} must be one of: ${list.join(', ')}.`);
+    return x;
+  },
+  some(xs, list, name) {
+    if (xs === undefined) return undefined;
+    if (!Array.isArray(xs) || xs.length > list.length || xs.some((x) => !list.includes(x))) throw new RunnerError('bad_request', `${name} takes a list of: ${list.join(', ')}.`);
+    return xs;
   },
   str(s, max, { optional = true } = {}) {
     if (s === undefined && optional) return undefined;
@@ -106,6 +125,53 @@ export function createOps({ build }) {
       const args = { privateOnly: Boolean(p.private_only), query: v.str(p.query, 100), limit: v.int(p.limit, 1, 100, 25), cursor: v.str(p.cursor, 300) };
       if (args.cursor && !p.platform) throw new RunnerError('bad_request', 'Pass platform together with that platform\'s next_cursor.');
       return each(p, (a) => a.agent.listPrograms(args));
+    },
+
+    async list_scope_changes(p) {
+      const one = v.adapter(p.platform, { optional: true });
+      if (one) await allowed(one);
+      const handle = v.handle(p.handle, { optional: true });
+      if (handle && !one) throw new RunnerError('bad_request', 'Pass platform together with handle.');
+      const settings = await getSettings();
+      const platforms = (one ? [one] : ADAPTERS).filter((a) => a.agent.watch && settings.platforms[a.id] !== false).map((a) => a.id);
+      const filters = {
+        handle,
+        since: v.when(p.since, v.when('7d')),
+        until: v.when(p.until, undefined),
+        kinds: v.some(p.kinds, KINDS, 'kinds'),
+        categories: v.some(p.asset_types, CATEGORIES, 'asset_types'),
+        visibility: v.oneOf(p.visibility, ['public', 'private'], 'visibility'),
+        min_severity: v.oneOf(p.min_severity, SEVERITIES, 'min_severity'),
+        in_scope_only: Boolean(p.in_scope_only),
+        bounty_only: Boolean(p.bounty_only),
+        query: v.str(p.query, 100),
+      };
+      const group = v.oneOf(p.group_by, ['program'], 'group_by');
+      const limit = v.int(p.limit, 1, 200, 50);
+      const from = p.cursor === undefined ? 0 : Number(v.str(p.cursor, 10));
+      if (!Number.isInteger(from) || from < 0) throw new RunnerError('bad_request', 'Unknown cursor. Pass next_cursor from the previous page.');
+      // A new page reads what the first call found; it does not start another check.
+      if (p.refresh !== false && p.cursor === undefined && platforms.length) sweep({ platforms }).catch(() => {});
+      await waitSweep(v.int(p.wait_seconds, 0, 50, 0) * 1000);
+
+      const events = (await Promise.all(platforms.map((id) => listEvents({ ...filters, platform: id })))).flat()
+        .sort((x, y) => y.at.localeCompare(x.at) || x.id.localeCompare(y.id));
+      const rows = group ? byProgram(events) : events;
+      const page = rows.slice(from, from + limit);
+      const status = await sweepStatus();
+      const watching = Object.values(status.platforms).map((x) => x.watching_since).filter(Boolean).sort()[0];
+      return {
+        checking: status.state === 'running',
+        sweep: status,
+        total: rows.length,
+        [group ? 'programs' : 'changes']: page,
+        next_cursor: from + limit < rows.length ? String(from + limit) : null,
+        note: [
+          status.state === 'running' ? 'ScopeDown is still checking the platforms, so more changes can appear. Call again with refresh false in a minute.' : null,
+          watching ? `Watching since ${watching}. New assets are dated by the platform up to ${BACKFILL_DAYS} days before that; removals and edits are known from then on.` : null,
+          'dated_by "platform" means the platform dated the change; "scopedown" means when ScopeDown noticed it. Read the program with get_program and run check_scope before testing a new asset.',
+        ].filter(Boolean).join(' '),
+      };
     },
 
     async get_program(p) {
@@ -251,6 +317,7 @@ function detail(op, p, r) {
   if (op === 'get_weaknesses') return p.query ? `"${String(p.query).slice(0, 60)}"` : '';
   if (op === 'get_report_requirements') return `${r.filing}${r.custom_fields?.length ? `, ${r.custom_fields.length} custom fields` : ''}`;
   if (op === 'search_disclosed_reports') return `${r.reports.length} results`;
+  if (op === 'list_scope_changes') return `${r.total} changes${r.checking ? ', still checking' : ''}`;
   return '';
 }
 

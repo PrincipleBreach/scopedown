@@ -7,7 +7,7 @@ import { ADAPTERS, detect, AGENT_PERMISSIONS } from '../src/platforms/index.js';
 import { fixtures } from './helpers.js';
 
 const REQUIRED_AGENT = ['account', 'program', 'listPrograms', 'weaknesses', 'resolveWeakness', 'requirements', 'myReports', 'findFiled', 'formUrl', 'formFields'];
-const OPTIONAL_AGENT = ['myReport', 'disclosed', 'file', 'severityFor', 'prefill'];
+const OPTIONAL_AGENT = ['myReport', 'disclosed', 'file', 'severityFor', 'prefill', 'watch'];
 
 for (const a of ADAPTERS) {
   test(`${a.id}: implements the adapter contract`, () => {
@@ -25,6 +25,14 @@ for (const a of ADAPTERS) {
     const src = a.program.fetchInPage.toString();
     assert.ok(!/\bimport\b|\brequire\(/.test(src), 'no imports inside the injected function');
   });
+
+  if (a.agent.watch) {
+    test(`${a.id}: its scope watch lists, signals and reads`, () => {
+      for (const k of ['list', 'signals', 'scopes']) assert.equal(typeof a.agent.watch[k], 'function', `watch.${k}`);
+      if (a.agent.watch.due) assert.equal(typeof a.agent.watch.due, 'function');
+      if (a.agent.watch.rotate) assert.ok(Number.isInteger(a.agent.watch.rotate) && a.agent.watch.rotate > 0);
+    });
+  }
 
   if (a.agent.prefill) {
     test(`${a.id}: its form prefill is an in-page function and an argument builder`, () => {

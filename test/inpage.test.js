@@ -84,3 +84,25 @@ test('a Bugcrowd tab on a longer engagement name is not read as the one asked fo
   assert.equal(out.error, undefined, out.error);
   assert.equal(out.brief.data.brief.name, 'Tesla', `requests: ${requests.join(', ')}`);
 });
+
+test('pageRequest runs a list of requests with one token and answers in order', async () => {
+  let inFlight = 0;
+  let most = 0;
+  globalThis.fetch = async (url, init = {}) => {
+    if ((init.method || 'GET') === 'GET') {
+      shellLoads++;
+      return new Response(`<meta name="csrf-token" content="${TOKEN}">`, { headers: { 'content-type': 'text/html' } });
+    }
+    inFlight++;
+    most = Math.max(most, inFlight);
+    await new Promise((r) => setTimeout(r, 5));
+    inFlight--;
+    if (init.headers['X-CSRF-Token'] !== TOKEN) return new Response('{}', { status: 403, headers: { 'content-type': 'application/json' } });
+    return Response.json({ n: JSON.parse(init.body).n });
+  };
+  const reqs = [1, 2, 3, 4, 5].map((n) => ({ path: '/graphql', method: 'POST', json: { n }, csrf: true, csrfFrom: '/hacktivity/overview' }));
+  const out = await pageRequest(reqs);
+  assert.deepEqual(out.map((r) => r.body.n), [1, 2, 3, 4, 5]);
+  assert.equal(shellLoads, 1, 'one token for the whole list');
+  assert.ok(most <= 3, `at most three at once, saw ${most}`);
+});

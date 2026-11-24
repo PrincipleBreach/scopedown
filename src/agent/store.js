@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = {
   platforms: {},
   // Keys like "hackerone:my_sandbox". Drafts for these programs are filed without review.
   autoSubmit: [],
+  // Check every program's scope on a timer and notify about new in-scope assets.
+  scopeWatch: false,
 };
 
 export async function getSettings() {

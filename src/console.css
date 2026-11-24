@@ -132,6 +132,36 @@ textarea.input.edit-title { font: 400 20px/28px var(--sans); letter-spacing: -0.
 .table .detail-cell { color: var(--muted); max-width: 440px; overflow-wrap: anywhere; }
 .table .detail-cell.bad { color: var(--index); }
 
+/* ---------------------------------------------------------------- scope */
+
+.scope-side { display: grid; justify-items: end; gap: 10px; }
+.scope-side-row { display: flex; align-items: center; gap: 20px; }
+.scope-state { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 12px; color: var(--muted); font: 400 12px/16px var(--mono); }
+.scope-state-text.bad { flex-basis: 100%; max-width: 44em; color: var(--index); text-align: right; font: 400 13px/20px var(--sans); }
+.scope-tools { display: grid; gap: 16px; margin-bottom: 32px; }
+.scope-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.5fr); gap: 16px; align-items: end; padding-top: 20px; border-top: 1px solid var(--line); }
+.scope-filters .field { min-width: 0; gap: 6px; }
+.scope-checks { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px 32px; }
+.scope-check { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer; }
+.scope-note { margin: 0 0 24px; color: var(--muted); font-size: 13px; line-height: 20px; }
+.scope-list { display: grid; gap: 48px; }
+.scope-program-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 14px; }
+.scope-program-title { min-width: 0; }
+.scope-program-title h2 { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; letter-spacing: -0.015em; }
+.scope-program-title .link { gap: 8px; font: inherit; letter-spacing: inherit; }
+.scope-program-title p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
+.scope-program-actions { display: flex; flex: none; gap: 20px; }
+.scope-rows .row { grid-template-columns: 64px 128px minmax(0, 1fr) auto 52px; column-gap: 20px; align-items: center; padding: 12px 0 13px; }
+.scope-rows .when { color: var(--muted); font: 400 12px/16px var(--mono); white-space: nowrap; }
+.scope-rows .row-title { min-width: 0; }
+.scope-rows .row-title strong { display: block; font: 400 14px/20px var(--mono); overflow-wrap: anywhere; }
+.scope-rows .row-title span { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scope-facts { display: flex; align-items: center; justify-content: flex-end; gap: 16px; white-space: nowrap; }
+.scope-facts .mono { font-size: 12px; line-height: 16px; text-transform: uppercase; letter-spacing: 0.04em; }
+.scope-rows .row-end { font: 400 11px/16px var(--mono); text-transform: uppercase; letter-spacing: 0.04em; text-align: right; }
+.scope-rows .row > .arrow { justify-self: end; }
+.scope-more { margin-top: 14px; }
+
 /* ---------------------------------------------------------------- settings */
 
 /* A section: its title and purpose on the left, the controls on the right. */
@@ -161,6 +191,12 @@ textarea.input.edit-title { font: 400 20px/28px var(--sans); letter-spacing: -0.
 .inline-form { display: flex; gap: 8px; }
 .inline-form select.input { width: auto; }
 
+@media (max-width: 480px) {
+  /* Four tabs and the brand fit at 390 once the name is read but not shown. */
+  .brand .product { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .tabs { gap: 16px; }
+}
+
 /* ---------------------------------------------------------------- colophon */
 
 .colophon-row { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; color: var(--muted); font-size: 12px; }
@@ -189,6 +225,18 @@ textarea.input.edit-title { font: 400 20px/28px var(--sans); letter-spacing: -0.
   .drafts .row-title { grid-column: 1; }
   .drafts .row > .arrow { grid-row: 1 / span 2; grid-column: 2; }
   .drafts .hide-sm { display: none; }
+  .scope-side { justify-items: start; }
+  .scope-state { justify-content: flex-start; }
+  .scope-state-text.bad { text-align: left; }
+  .scope-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scope-filters > .field:nth-child(5) { grid-column: 1 / -1; }
+  .scope-program-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .scope-rows .row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; column-gap: 12px; }
+  .scope-rows .when { grid-row: 1; grid-column: 2; text-align: right; }
+  .scope-rows .row > .status { grid-row: 1; grid-column: 1; }
+  .scope-rows .row-title { grid-column: 1 / -1; }
+  .scope-facts { grid-column: 1; justify-content: flex-start; }
+  .scope-rows .row > :is(.row-end, .arrow) { grid-row: 3; grid-column: 2; }
   .section { grid-template-columns: minmax(0, 1fr); }
   .sheet { padding: 24px 20px 32px; }
   .tabs { gap: 20px; }

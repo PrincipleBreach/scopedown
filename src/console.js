@@ -1,5 +1,5 @@
 // ScopeDown agent console: review drafts, see what agents did, set what they may do.
-// Hash routes: #/drafts, #/drafts/<id>, #/activity, #/settings.
+// Hash routes: #/drafts, #/drafts/<id>, #/scope, #/activity, #/settings.
 
 import { h, $, ago, bytes, when } from './ui/dom.js';
 import { icon, arrow } from './ui/icons.js';
@@ -148,6 +148,7 @@ async function render() {
   }
   let content;
   if (tab === 'drafts' && parts[1]) content = await draftView(parts[1]);
+  else if (tab === 'scope') content = await scopeView(params);
   else if (tab === 'activity') content = await activityView(params);
   else if (tab === 'settings') content = await settingsView();
   else content = draftsView(params);
@@ -480,6 +481,254 @@ async function remove(d) {
   location.hash = '#/drafts';
 }
 
+// ---------------------------------------------------------------- scope
+
+const SCOPE_KINDS = {
+  new: { label: 'New', kinds: ['added', 'program_added'] },
+  changed: { label: 'Changed', kinds: ['changed'] },
+  removed: { label: 'Removed', kinds: ['removed', 'program_removed'] },
+  all: { label: 'All', kinds: null },
+};
+const PERIODS = { '24h': ['Last 24 hours', 1], '7d': ['Last 7 days', 7], '30d': ['Last 30 days', 30], '90d': ['Last 90 days', 90] };
+const ASSET_TYPES = { web: 'Web', wildcard: 'Wildcard', api: 'API', network: 'IPs and ranges', android: 'Android', ios: 'iOS', executable: 'Executable', source_code: 'Source code', hardware: 'Hardware', iot: 'IoT', cloud: 'Cloud', blockchain: 'Blockchain', ai_model: 'AI model', other: 'Other' };
+const CHANGE_WORD = {
+  added: ['New', 'waiting'], changed: ['Changed', 'quiet'], removed: ['Removed', 'quiet'],
+  program_added: ['New program', 'waiting'], program_removed: ['Gone', 'quiet'],
+};
+const FIELD_NAMES = { in_scope: 'In scope', bounty: 'Bounty', max_severity: 'Max severity', group: 'Group', reward: 'Reward', type: 'Type', location: 'Location', asset: 'Name' };
+const PROGRAMS_PER_PAGE = 20;
+const ROWS_PER_PROGRAM = 8;
+const COPYABLE = new Set(['web', 'wildcard', 'api', 'network']);
+let scopePoll = null;
+
+// The page's filters live in the hash, so a view can be bookmarked and the back button works.
+function scopeLink(params, change = {}) {
+  const next = new URLSearchParams(params);
+  for (const [k, v] of Object.entries(change)) {
+    if (v == null || v === '') next.delete(k);
+    else next.set(k, v);
+  }
+  if (!('page' in change)) next.delete('page');
+  const q = next.toString();
+  return `#/scope${q ? `?${q}` : ''}`;
+}
+
+function scopeStatusLine(st) {
+  const running = st.state === 'running';
+  const platforms = Object.entries(st.platforms);
+  const parts = platforms.map(([id, p]) => {
+    if (running && p.stage && p.stage !== 'done' && p.stage !== 'failed') {
+      const [n, of] = p.stage === 'reading' ? [p.read, p.to_read] : [p.checked, p.programs];
+      return `${label(id)} ${p.stage} ${n} of ${of}`;
+    }
+    return p.programs ? `${p.programs} ${label(id)}` : null;
+  }).filter(Boolean);
+  // Only a check that read everything counts as checked.
+  const last = platforms.map(([, p]) => p.last_complete_at).filter(Boolean).sort().at(-1);
+  const errors = running ? [] : platforms.filter(([, p]) => p.errors?.length).map(([id, p]) => `${label(id)}: ${p.errors[0]}${p.errors.length > 1 ? ` (and ${p.errors.length - 1} more)` : ''}`);
+  let word = ['Not checked yet', 'quiet'];
+  if (running) word = ['Checking', 'waiting'];
+  else if (last) word = [`Checked ${ago(last)}`, 'quiet'];
+  else if (st.finished_at) word = ['Check failed', 'bad'];
+  return h('div', { class: 'scope-state', id: 'scope-state', 'aria-live': 'polite' },
+    h('span', { class: 'status', dataset: { tone: word[1] }, text: word[0] }),
+    parts.length ? h('span', { class: 'scope-state-text', text: running ? parts.join(' · ') : `${parts.join(', ')} programs` }) : null,
+    errors.length ? h('span', { class: 'scope-state-text bad', text: errors.join(' ') }) : null);
+}
+
+async function checkNow(btn) {
+  await busy(btn, async () => {
+    await call('scope:check');
+    await new Promise((r) => setTimeout(r, 400));
+  });
+  render();
+}
+
+function watchScope() {
+  clearTimeout(scopePoll);
+  scopePoll = setTimeout(async () => {
+    if (route().parts[0] !== 'scope') return;
+    const st = await call('scope:status').catch(() => null);
+    if (!st) return;
+    if (st.state === 'running') {
+      document.getElementById('scope-state')?.replaceWith(scopeStatusLine(st));
+      watchScope();
+    } else render();
+  }, 2000);
+}
+
+function changeText(e) {
+  if (e.kind === 'program_added') return e.assets ? `${e.assets} assets` : 'New to you';
+  if (e.kind === 'program_removed') return 'You can no longer submit here';
+  if (e.kind !== 'changed') return [e.asset_type, e.group, e.reward].filter(Boolean).join(' · ');
+  const yes = (v) => (v === true ? 'yes' : v === false ? 'no' : v ?? 'none');
+  return Object.entries(e.changes || {}).map(([k, v]) => (Array.isArray(v) ? `${FIELD_NAMES[k] || k} ${yes(v[0])} to ${yes(v[1])}` : `${k === 'notes' ? 'Notes' : k} ${v}`)).join(' · ');
+}
+
+function scopeRow(e) {
+  const [word, tone] = CHANGE_WORD[e.kind] || [e.kind, 'quiet'];
+  const programEvent = e.kind.startsWith('program_');
+  const end = h('span', { class: 'row-end', text: programEvent ? '' : 'Copy' });
+  const facts = [];
+  if (!programEvent) {
+    facts.push(e.in_scope ? null : 'Out of scope');
+    facts.push(e.bounty === true ? 'Bounty' : e.bounty === false ? 'No bounty' : null);
+  }
+  const body = [
+    h('span', { class: 'when', title: `${when(e.at)}${e.dated_by === 'platform' ? `, dated by ${label(e.platform)}` : ', when ScopeDown noticed'}`, text: ago(e.at) }),
+    h('span', { class: 'status', dataset: { tone }, text: word }),
+    h('span', { class: 'row-title' },
+      h('strong', { text: programEvent ? e.program_name : e.asset }),
+      h('span', { text: [changeText(e), e.location].filter(Boolean).join(' · ') })),
+    h('span', { class: 'scope-facts' },
+      e.max_severity ? severity(e.max_severity) : null,
+      h('span', { class: 'mono muted', text: facts.filter(Boolean).join(' · ') })),
+    programEvent ? arrow('out') : end,
+  ];
+  if (programEvent) {
+    return h('li', {}, h('a', { class: 'row', href: e.program_url, target: '_blank', rel: 'noopener', title: `Open ${e.program_name}` }, body));
+  }
+  const b = h('button', { class: 'row', type: 'button', title: `Copy ${e.asset}` }, body);
+  b.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(e.asset);
+    flash(end, 'Copied');
+  });
+  return h('li', {}, b);
+}
+
+function programBlock(g, params, { all }) {
+  const counts = Object.entries(g.counts).map(([k, n]) => `${n} ${(CHANGE_WORD[k]?.[0] || k).toLowerCase()}`).join(' · ');
+  const targets = [...new Set(g.events.filter((e) => e.kind === 'added' && e.in_scope && COPYABLE.has(e.category)).map((e) => e.asset))];
+  const copy = targets.length ? h('button', { class: 'link link--muted', type: 'button' }, h('span', { text: `Copy ${targets.length} target${targets.length === 1 ? '' : 's'}` })) : null;
+  copy?.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(targets.join('\n'));
+    toast(`Copied ${targets.length} new in-scope target${targets.length === 1 ? '' : 's'} from ${g.program_name}, one per line.`);
+  });
+  const shown = all ? g.events : g.events.slice(0, ROWS_PER_PROGRAM);
+  return h('section', { class: 'scope-program', 'aria-label': g.program_name },
+    h('header', { class: 'scope-program-head' },
+      h('div', { class: 'scope-program-title' },
+        h('h2', {}, h('a', { class: 'link', href: g.program_url, target: '_blank', rel: 'noopener' }, h('span', { text: g.program_name }), arrow('out'))),
+        h('p', { class: 'mono', text: [label(g.platform), g.visibility, g.program, counts].filter(Boolean).join(' · ') })),
+      h('div', { class: 'scope-program-actions' }, copy,
+        all ? null : h('a', { class: 'link link--muted', href: scopeLink(params, { program: `${g.platform}:${g.program}` }) }, h('span', { text: 'Only this program' })))),
+    h('ul', { class: 'rows scope-rows' }, shown.map(scopeRow)),
+    g.events.length > shown.length ? h('a', { class: 'link link--muted scope-more', href: scopeLink(params, { program: `${g.platform}:${g.program}` }) }, h('span', { text: `All ${g.events.length} changes` }), arrow('next')) : null);
+}
+
+function scopeFilters(params) {
+  const field = (name, el) => h('label', { class: 'field' }, h('span', { class: 'label', text: name }), el);
+  const select = (key, options, fallback, name) => {
+    const el = h('select', { class: 'input', 'aria-label': name }, Object.entries(options).map(([v, t]) => h('option', { value: v, selected: (params.get(key) || fallback) === v, text: t })));
+    el.addEventListener('change', () => { location.hash = scopeLink(params, { [key]: el.value === fallback ? null : el.value }); });
+    return field(name, el);
+  };
+  const check = (key, text, on) => {
+    const el = h('input', { type: 'checkbox', class: 'switch', checked: on });
+    el.addEventListener('change', () => { location.hash = scopeLink(params, { [key]: el.checked === (key === 'scope') ? null : (key === 'scope' ? 'any' : '1') }); });
+    return h('label', { class: 'scope-check' }, el, h('span', { text }));
+  };
+  const search = h('input', { class: 'input', type: 'search', value: params.get('q') || '', placeholder: 'Asset, program or group', spellcheck: 'false', 'aria-label': 'Search' });
+  const form = h('form', { class: 'scope-filters', role: 'search', 'aria-label': 'Filter scope changes' },
+    select('period', Object.fromEntries(Object.entries(PERIODS).map(([k, [t]]) => [k, t])), '7d', 'Period'),
+    select('platform', { all: 'All platforms', ...Object.fromEntries(ADAPTERS.filter((a) => a.agent.watch).map((a) => [a.id, a.label])) }, 'all', 'Platform'),
+    select('type', { all: 'All asset types', ...ASSET_TYPES }, 'all', 'Asset type'),
+    select('vis', { all: 'Private and public', private: 'Private', public: 'Public' }, 'all', 'Programs'),
+    field('Search', search),
+    h('div', { class: 'scope-checks' }, check('scope', 'In scope only', params.get('scope') !== 'any'), check('bounty', 'Bounty only', params.get('bounty') === '1')));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    location.hash = scopeLink(params, { q: search.value.trim() || null });
+  });
+  search.addEventListener('search', () => { if (!search.value) location.hash = scopeLink(params, { q: null }); });
+  return form;
+}
+
+async function scopeView(params) {
+  const p = (k) => params.get(k);
+  const kind = SCOPE_KINDS[p('kind')] ? p('kind') : 'new';
+  const period = PERIODS[p('period')] ? p('period') : '7d';
+  const [pf, ph] = (p('program') || '').split(':');
+  const filters = {
+    since: new Date(Date.now() - PERIODS[period][1] * 86_400_000).toISOString(),
+    platform: getAdapter(pf) ? pf : getAdapter(p('platform')) ? p('platform') : undefined,
+    handle: getAdapter(pf) && ph ? ph : undefined,
+    categories: ASSET_TYPES[p('type')] ? [p('type')] : undefined,
+    visibility: ['public', 'private'].includes(p('vis')) ? p('vis') : undefined,
+    in_scope_only: p('scope') !== 'any',
+    bounty_only: p('bounty') === '1',
+    query: p('q') || undefined,
+  };
+
+  const lede = 'New and changed scope across every program you can submit to, dated by the platforms. Copy an asset to start on it.';
+  if (!agent.settings.agentEnabled) {
+    const on = button('Turn on agent access', () => enableAgents(true), { small: true });
+    on.classList.remove('action--block');
+    return h('div', {}, pageHead({ eyebrow: 'Scope watch', title: 'Scope', lede }),
+      h('div', { class: 'region-empty' }, h('div', {}, h('h2', { text: 'Scope watch reads your programs through this browser' }), h('p', { text: `It needs agent access to ${ADAPTERS.map((a) => a.label).join(' and ')}.` })), on));
+  }
+
+  const data = await call('scope:list', { filters });
+  const st = data.status;
+  const running = st.state === 'running';
+  const checked = Object.values(st.platforms).some((x) => x.watching_since);
+  const counts = Object.fromEntries(Object.entries(SCOPE_KINDS).map(([k, v]) => [k, v.kinds ? data.events.filter((e) => v.kinds.includes(e.kind)).length : data.events.length]));
+  const events = SCOPE_KINDS[kind].kinds ? data.events.filter((e) => SCOPE_KINDS[kind].kinds.includes(e.kind)) : data.events;
+
+  const check = h('button', { class: 'action action--sm', type: 'button', disabled: running, 'aria-busy': running ? 'true' : null }, running ? 'Checking' : 'Check now', arrow('next'));
+  check.addEventListener('click', () => checkNow(check));
+  const auto = h('a', { class: 'link link--muted', href: '#/settings?focus=scope-watch' }, h('span', { text: data.watch ? `Checks every ${data.every} minutes` : 'Auto-check off' }));
+  const fresh = counts.new;
+  const head = pageHead({
+    eyebrow: checked ? `${fresh} new in ${PERIODS[period][0].toLowerCase()}` : 'Scope watch',
+    title: 'Scope',
+    lede,
+    side: h('div', { class: 'scope-side' }, h('div', { class: 'scope-side-row' }, auto, check), scopeStatusLine(st)),
+  });
+  if (running) watchScope();
+
+  if (!checked && !data.events.length) {
+    return h('div', {}, head, h('div', { class: 'region-empty' }, h('div', {},
+      h('h2', { text: running ? 'Checking every program for the first time' : 'No scope checked yet' }),
+      h('p', { text: 'The first check reads every program you can submit to: about a minute on HackerOne and 10 on Bugcrowd, which allows one request a second. It lists what the platforms added in the last 30 days.' }))));
+  }
+
+  const kinds = h('nav', { class: 'filters', 'aria-label': 'Kind of change' }, Object.entries(SCOPE_KINDS).map(([k, v]) => h('a', {
+    href: scopeLink(params, { kind: k === 'new' ? null : k }),
+    'aria-current': String(k === kind),
+  }, v.label, h('span', { class: 'n', text: String(counts[k]) }))));
+
+  const groups = new Map();
+  for (const e of events) {
+    const key = `${e.platform}:${e.program}`;
+    if (!groups.has(key)) groups.set(key, { platform: e.platform, program: e.program, program_name: e.program_name, program_url: e.program_url, visibility: e.visibility, counts: {}, events: [] });
+    const g = groups.get(key);
+    g.counts[e.kind] = (g.counts[e.kind] || 0) + 1;
+    g.events.push(e);
+  }
+  // A new program leads its own group.
+  for (const g of groups.values()) g.events.sort((x, y) => y.kind.startsWith('program_') - x.kind.startsWith('program_'));
+  const list = [...groups.values()];
+  const one = Boolean(filters.handle);
+  const page = Math.max(1, Number(p('page')) || 1);
+  const shown = list.slice((page - 1) * PROGRAMS_PER_PAGE, page * PROGRAMS_PER_PAGE);
+  const back = one ? h('a', { class: 'link link--muted back', href: scopeLink(params, { program: null }) }, arrow('back'), h('span', { text: 'All programs' })) : null;
+
+  const body = list.length
+    ? h('div', { class: 'scope-list' }, shown.map((g) => programBlock(g, params, { all: one })))
+    : h('div', { class: 'region-empty' },
+      h('div', {}, h('h2', { text: `Nothing ${SCOPE_KINDS[kind].label.toLowerCase() === 'all' ? '' : `${SCOPE_KINDS[kind].label.toLowerCase()} `}in ${PERIODS[period][0].toLowerCase()}` }), h('p', { text: 'Try a longer period, or clear the filters.' })),
+      h('a', { class: 'link', href: '#/scope' }, h('span', { text: 'Clear filters' }), arrow('next')));
+  const pages = Math.ceil(list.length / PROGRAMS_PER_PAGE);
+  const pager = pages > 1 ? h('div', { class: 'pager' },
+    h('span', { text: `Programs ${(page - 1) * PROGRAMS_PER_PAGE + 1} to ${Math.min(page * PROGRAMS_PER_PAGE, list.length)} of ${list.length}` }),
+    h('nav', { 'aria-label': 'Pages' },
+      h('a', { class: 'link', href: scopeLink(params, { page: String(page - 1) }), hidden: page <= 1 }, arrow('back'), h('span', { text: 'Newer' })),
+      h('a', { class: 'link', href: scopeLink(params, { page: String(page + 1) }), hidden: page >= pages }, h('span', { text: 'Older' }), arrow('next')))) : null;
+  const capped = data.total > data.events.length ? h('p', { class: 'scope-note', text: `Showing the newest ${data.events.length} of ${data.total} changes. Narrow the filters to see the rest.` }) : null;
+  return h('div', {}, head, back, h('div', { class: 'scope-tools' }, kinds, scopeFilters(params)), capped, body, pager);
+}
+
 // ---------------------------------------------------------------- activity
 
 async function activityView(params) {
@@ -595,6 +844,14 @@ async function settingsView() {
     autoRows.length ? h('ul', { class: 'rows settings-rows' }, autoRows) : h('div', { class: 'region-empty', style: 'padding:16px 0' }, h('p', { style: 'margin:0', text: 'No programs. Every draft waits for you.' })),
     autoForm);
 
+  const watchOn = sw(Boolean(s.scopeWatch), async (on) => {
+    await call('scope:auto', { enabled: on });
+    toast(on ? 'Scope is checked every 30 minutes.' : 'Scope is checked only when you or an agent ask.');
+  }, 'Check scope every 30 minutes', !s.agentEnabled);
+  const scopeWatch = section('scope-watch', 'Scope watch', 'Finds new and changed scope on every program you can submit to.',
+    h('ul', { class: 'rows settings-rows' },
+      setting('Check every 30 minutes', 'In a background tab, with a notification when new in-scope assets or programs appear. Bugcrowd gets one request a second, and each public engagement is checked at most every 2 hours.', watchOn)));
+
   const clearLog = h('button', { class: 'action action--quiet action--sm', type: 'button', text: 'Clear' });
   clearLog.addEventListener('click', async () => {
     const r = await dialog({ title: 'Clear the activity log?', confirm: 'Clear', tone: 'danger' });
@@ -606,14 +863,20 @@ async function settingsView() {
     const r = await dialog({ title: `Delete ${finished} finished draft${finished === 1 ? '' : 's'}?`, body: 'Filed, rejected and handed-off drafts are removed from ScopeDown with their files. Nothing on the platforms changes.', confirm: 'Delete', tone: 'danger' });
     if (r.action === 'confirm') { const n = await call('drafts:clear-finished'); toast(`Deleted ${n} drafts.`); render(); }
   });
+  const clearScope = h('button', { class: 'action action--quiet action--sm', type: 'button', text: 'Clear' });
+  clearScope.addEventListener('click', async () => {
+    const r = await dialog({ title: 'Clear the scope history?', body: 'The changes found so far and the stored copy of each program\'s scope are removed. The next check starts a new baseline and lists what the platforms added in the last 30 days.', confirm: 'Clear scope history', tone: 'danger' });
+    if (r.action === 'confirm') { await call('scope:reset'); toast('Scope history cleared.'); }
+  });
   const data = section('data', 'Data', 'Kept in this browser profile.',
     h('ul', { class: 'rows settings-rows' },
       setting('Activity log', 'The last 300 operations agents ran.', clearLog),
-      setting('Drafts', `${drafts.length} draft${drafts.length === 1 ? '' : 's'}, ${finished} finished.`, clearDrafts)));
+      setting('Drafts', `${drafts.length} draft${drafts.length === 1 ? '' : 's'}, ${finished} finished.`, clearDrafts),
+      setting('Scope history', 'What the scope watch found, and its copy of each program\'s scope. Clearing starts a new baseline.', clearScope)));
 
   return h('div', {},
     pageHead({ eyebrow: 'Agent console', title: 'Settings', lede: "What agents may do with this browser's access." }),
-    h('div', { class: 'arrive' }, access, setupSection(), auto, data));
+    h('div', { class: 'arrive' }, access, setupSection(), scopeWatch, auto, data));
 }
 
 // ---------------------------------------------------------------- live updates

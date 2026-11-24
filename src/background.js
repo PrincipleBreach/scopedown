@@ -8,6 +8,7 @@ import { createOps } from './agent/ops.js';
 import { submitDraft, handOff, rejectDraft, updateDraft, deleteDraft, updateBadge, resumeInterrupted, addAttachment, removeAttachment } from './agent/drafts.js';
 import { loadFile, saveFile, checkName, typeFor, sha256, toBase64, fromBase64, MAX_FILE_BYTES } from './agent/files.js';
 import { getSettings, setSettings, getDrafts, getActivity, getConnection, clearActivity, FINISHED } from './agent/store.js';
+import { sweep, sweepStatus, listEvents, resetWatch } from './agent/watch.js';
 
 const ext = globalThis.browser ?? globalThis.chrome;
 
@@ -31,6 +32,55 @@ async function build(program) {
 }
 
 setDispatcher(createOps({ build }));
+
+// Scope watch on a timer, when the user turned it on. Every half hour it checks the platforms and
+// tells the user about new in-scope assets.
+const WATCH_ALARM = 'scope-watch';
+const WATCH_MINUTES = 30;
+
+async function scheduleWatch() {
+  if (!ext.alarms) return;
+  const s = await getSettings();
+  if (!s.scopeWatch || !s.agentEnabled) {
+    await ext.alarms.clear(WATCH_ALARM);
+    return;
+  }
+  if (!(await ext.alarms.get(WATCH_ALARM))) ext.alarms.create(WATCH_ALARM, { delayInMinutes: 1, periodInMinutes: WATCH_MINUTES });
+}
+
+async function watchTick() {
+  const s = await getSettings();
+  if (!s.scopeWatch || !s.agentEnabled) return;
+  const started = new Date().toISOString();
+  await sweep({ force: true }).catch(() => {});
+  // What the platforms changed recently, not the first check's look back over past weeks.
+  const recent = new Date(Date.now() - 86_400_000).toISOString();
+  const fresh = (await listEvents({ in_scope_only: true, kinds: ['added', 'program_added'] }))
+    .filter((e) => e.seen_at >= started && (e.dated_by === 'scopedown' || e.at >= recent) && s.platforms[e.platform] !== false);
+  if (!fresh.length) return;
+  try {
+    if (!(await ext.permissions.contains({ permissions: ['notifications'] }))) return;
+    const programs = new Map();
+    for (const e of fresh) programs.set(e.program_name, (programs.get(e.program_name) || 0) + 1);
+    const assets = fresh.filter((e) => e.kind === 'added').length;
+    const invites = fresh.filter((e) => e.kind === 'program_added').length;
+    await ext.notifications.create('scope:new', {
+      type: 'basic',
+      iconUrl: ext.runtime.getURL('icons/icon-128.png'),
+      title: [assets ? `${assets} new in-scope asset${assets === 1 ? '' : 's'}` : null, invites ? `${invites} new program${invites === 1 ? '' : 's'}` : null].filter(Boolean).join(', '),
+      message: [...programs].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([name, n]) => `${name} (${n})`).join(', '),
+      priority: 1,
+    });
+  } catch { /* notifications are a convenience */ }
+}
+
+ext.alarms?.onAlarm.addListener((a) => {
+  if (a.name === WATCH_ALARM) watchTick();
+});
+
+// What the console's Scope page shows: every change that matches the filters except the kind,
+// which the page splits into its tabs.
+const SCOPE_ROWS = 5000;
 
 // Requests from ScopeDown's own pages. Agents never reach these: they arrive only through
 // the native bridge and the operation table.
@@ -57,7 +107,26 @@ const handlers = {
     await setSettings({ agentEnabled: Boolean(enabled) });
     if (enabled) await connectBridge();
     else await disconnectBridge();
+    await scheduleWatch();
     return handlers['agent:get']();
+  },
+  async 'scope:list'({ filters = {} }) {
+    const s = await getSettings();
+    const events = (await listEvents(filters)).filter((e) => s.platforms[e.platform] !== false);
+    return { status: await sweepStatus(), watch: Boolean(s.scopeWatch), every: WATCH_MINUTES, total: events.length, events: events.slice(0, SCOPE_ROWS) };
+  },
+  'scope:status': () => sweepStatus(),
+  async 'scope:check'() {
+    sweep({ force: true }).catch(() => {});
+    return sweepStatus();
+  },
+  async 'scope:auto'({ enabled }) {
+    await setSettings({ scopeWatch: Boolean(enabled) });
+    await scheduleWatch();
+    return Boolean(enabled);
+  },
+  async 'scope:reset'() {
+    await resetWatch();
   },
   async 'agent:platform'({ platform, enabled }) {
     if (!getAdapter(platform)) throw new Error(`Unknown platform ${platform}.`);
@@ -114,8 +183,9 @@ ext.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // chrome.notifications exists only once the optional permission is granted.
 async function openDraftFromNotification(id) {
-  if (!id.startsWith('draft:')) return;
-  await ext.tabs.create({ url: ext.runtime.getURL(`src/console.html#/drafts/${id.slice(6)}`) });
+  if (id === 'scope:new') await ext.tabs.create({ url: ext.runtime.getURL('src/console.html#/scope') });
+  else if (id.startsWith('draft:')) await ext.tabs.create({ url: ext.runtime.getURL(`src/console.html#/drafts/${id.slice(6)}`) });
+  else return;
   ext.notifications.clear(id);
 }
 function listenNotifications() {
@@ -132,5 +202,6 @@ ext.permissions.onAdded.addListener(() => {
 ext.runtime.onStartup.addListener(() => connectBridge());
 ext.runtime.onInstalled.addListener(() => connectBridge());
 connectBridge();
+scheduleWatch();
 updateBadge();
 resumeInterrupted();

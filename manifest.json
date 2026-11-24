@@ -28,7 +28,8 @@
     "activeTab",
     "scripting",
     "storage",
-    "offscreen"
+    "offscreen",
+    "alarms"
   ],
   "optional_permissions": [
     "nativeMessaging",

@@ -68,7 +68,8 @@ function answerGraphql(query, variables) {
   if (/me \{ username/.test(query)) return { me: { username: 'tester' } };
   if (/ScopeDownReport\(/.test(query)) {
     return { report: { _id: String(variables.id), title: 'A report', substate: 'triaged', created_at: '2026-11-01T00:00:00Z', url: `https://hackerone.com/reports/${variables.id}`, vulnerability_information: variables.id === 1 ? 'x' : '', reporter: { username: variables.id === 1 ? 'tester' : 'someone-else' }, team: { handle: 'security' },
-      // A limited disclosure: no body. Like the real API, GraphQL lists no summaries; the report's JSON page does.
+      // Like the real API, GraphQL shows another hunter's disclosed report without its body or
+      // summaries; the report's JSON page has both.
       disclosed_at: variables.id === 1 ? null : '2026-11-10T00:00:00Z', summaries: [], activities: { pageInfo: { hasNextPage: false }, nodes: [] } } };
   }
   if (/ScopeDownRequirements/.test(query)) {
@@ -150,7 +151,7 @@ globalThis.chrome = {
           return [{ result: { status: 200, url: `https://bugcrowd.com${req.path}`, body: bugcrowdJson(req.path) } }];
         }
         if (req.path === '/reports/2.json') {
-          return [{ result: { status: 200, url: `https://hackerone.com${req.path}`, body: { id: 2, summaries: [{ category: 'team', content: 'Fixed in 2.1.' }, { category: 'researcher', content: 'SSRF via the recordings endpoint.' }, { category: 'researcher' }] } } }];
+          return [{ result: { status: 200, url: `https://hackerone.com${req.path}`, body: { id: 2, vulnerability_information: 'The full write-up.', summaries: [{ category: 'team', content: 'Fixed in 2.1.' }, { category: 'researcher', content: 'SSRF via the recordings endpoint.' }, { category: 'researcher' }] } } }];
         }
         const query = req.json?.query || '';
         requests.push({ kind: 'request', path: req.path, query, variables: req.json?.variables });
@@ -574,8 +575,8 @@ test('get_my_report says whose report it is', async () => {
   const other = (await dispatch('get_my_report', { platform: 'hackerone', id: '2' })).result;
   assert.equal(other.yours, false);
   assert.equal(other.reporter, 'someone-else');
-  // A limited disclosure has no body; the published summaries carry the write-up.
   assert.equal(other.disclosed_at, '2026-11-10T00:00:00Z');
+  assert.equal(other.description, 'The full write-up.');
   assert.deepEqual(other.summaries, [{ by: 'team', content: 'Fixed in 2.1.' }, { by: 'researcher', content: 'SSRF via the recordings endpoint.' }]);
   assert.equal(mine.summaries, undefined, 'an undisclosed report has no summaries to show');
 });

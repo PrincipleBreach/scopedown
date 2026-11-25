@@ -75,7 +75,9 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .sheet .ledger { --ledger-key: 112px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
 .sheet .ledger .mono { font-size: 13px; }
 .sheet .ledger pre { margin: 0; max-height: 220px; overflow: auto; padding: 12px 14px; border-radius: 3px; background: var(--band); color: var(--band-text); font-size: 12px; line-height: 19px; white-space: pre-wrap; }
-.sheet-block { display: grid; gap: 14px; padding-top: 28px; }
+/* minmax(0, 1fr): an auto column would grow to the longest line of a code block and push the
+   whole description past the sheet. Code blocks and tables scroll inside it instead. */
+.sheet-block { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-top: 28px; }
 .sheet-block + .sheet-block { margin-top: 8px; }
 .unset { color: var(--muted); }
 

@@ -21,13 +21,24 @@ async function getJson(path) {
   return out.body;
 }
 
+// Bugcrowd forwards username@bugcrowdninja.com to the hunter. Its docs say nothing of +tags.
+export const ALIAS = {
+  plus_tags: 'not_documented',
+  note: 'Bugcrowd forwards mail sent to the alias to the user\'s inbox. It does not document +tags on the alias, so use a tagged address only where the program\'s rules show one. A new account\'s alias can take 10 minutes after its first sign-in to work.',
+  docs: 'https://docs.bugcrowd.com/researchers/participating-in-program/your-bugcrowdninja-email-address/',
+};
+
+// The Hacker Portal's own profile. It also holds the account email and name; only the username
+// is kept. No response names the alias: Bugcrowd's docs define it as username@bugcrowdninja.com.
 export async function account() {
   return cached('bc:me', 60_000, async () => {
     try {
-      const s = await getJson(submissionsPath(0));
-      return { signed_in: true, username: s.submissions?.[0]?.username || null };
+      const p = await getJson('/profile-service/v1/profile');
+      const username = typeof p.username === 'string' && p.username ? p.username : null;
+      const plain = username && /^[\w.-]{1,64}$/.test(username);
+      return { signed_in: true, username, email_alias: plain ? `${username}@bugcrowdninja.com` : null };
     } catch (e) {
-      if (e.code === 'signed_out') return { signed_in: false, username: null };
+      if (e.code === 'signed_out') return { signed_in: false, username: null, email_alias: null };
       throw e;
     }
   });

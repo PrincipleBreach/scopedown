@@ -32,10 +32,27 @@ function meList(data, field, cursor) {
 
 const PRIVATE_STATES = new Set(['soft_launched', 'sandboxed']);
 
+// Every hacker gets username@wearehackerone.com, and HackerOne forwards username+anything@ too.
+export const ALIAS = {
+  plus_tags: 'supported',
+  note: 'HackerOne forwards mail sent to the alias, and to username+anything@wearehackerone.com, to the user\'s inbox. The alias cannot send mail.',
+  docs: 'https://docs.hackerone.com/en/articles/8404308-hacker-email-alias',
+};
+
 export async function account() {
   return cached('h1:me', 60_000, async () => {
-    const data = await gql('{ me { username } }');
-    return { signed_in: Boolean(data?.me), username: data?.me?.username || null };
+    // HackerOne names the alias itself. If the field ever leaves the schema, GraphQL refuses the
+    // whole query, so ask again without it and use the documented form: the sign-in check must not break.
+    let data;
+    try {
+      data = await gql('{ me { username email_alias } }');
+    } catch (e) {
+      if (!/email_alias/.test(e.message)) throw e;
+      data = await gql('{ me { username } }');
+    }
+    const me = data?.me;
+    const username = me?.username || null;
+    return { signed_in: Boolean(me), username, email_alias: me?.email_alias || (username ? `${username}@wearehackerone.com` : null) };
   });
 }
 

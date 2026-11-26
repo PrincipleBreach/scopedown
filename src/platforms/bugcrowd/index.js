@@ -18,6 +18,7 @@ export default {
   },
   agent: {
     account: agent.account,
+    alias: agent.ALIAS,
     program: agent.program,
     listPrograms: agent.listPrograms,
     weaknesses: agent.weaknesses,

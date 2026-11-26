@@ -67,7 +67,8 @@ const target = (id, name, category = 'website') => ({ id, name, category, uri: '
 function bcAnswer(path) {
   const url = new URL(path, 'https://bugcrowd.com');
   bc.asked.push(url.pathname);
-  if (url.pathname === '/submissions.json') return bc.signedOut ? { status: 401, body: {} } : { body: { submissions: [], meta: { totalHits: 0 } } };
+  // The session check reads the profile; signed out, Bugcrowd answers it with 401.
+  if (url.pathname === '/profile-service/v1/profile') return bc.signedOut ? { status: 401, body: { error: 'Unauthorized' } } : { body: { username: 'tester' } };
   if (url.pathname === '/engagements.json') {
     const access = url.searchParams.get('access');
     const list = bc.signedOut && access === 'invite_only' ? [] : bc.engagements.filter((e) => (access === 'invite_only') === e.isPrivate);

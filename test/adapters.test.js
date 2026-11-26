@@ -7,7 +7,7 @@ import { ADAPTERS, detect, AGENT_PERMISSIONS } from '../src/platforms/index.js';
 import { fixtures } from './helpers.js';
 
 const REQUIRED_AGENT = ['account', 'program', 'listPrograms', 'weaknesses', 'resolveWeakness', 'requirements', 'myReports', 'findFiled', 'formUrl', 'formFields'];
-const OPTIONAL_AGENT = ['myReport', 'disclosed', 'file', 'severityFor', 'prefill', 'watch'];
+const OPTIONAL_AGENT = ['myReport', 'disclosed', 'file', 'severityFor', 'prefill', 'watch', 'alias'];
 
 for (const a of ADAPTERS) {
   test(`${a.id}: implements the adapter contract`, () => {
@@ -31,6 +31,14 @@ for (const a of ADAPTERS) {
       for (const k of ['list', 'signals', 'scopes']) assert.equal(typeof a.agent.watch[k], 'function', `watch.${k}`);
       if (a.agent.watch.due) assert.equal(typeof a.agent.watch.due, 'function');
       if (a.agent.watch.rotate) assert.ok(Number.isInteger(a.agent.watch.rotate) && a.agent.watch.rotate > 0);
+    });
+  }
+
+  if (a.agent.alias) {
+    test(`${a.id}: describes its email alias`, () => {
+      assert.ok(['supported', 'not_documented'].includes(a.agent.alias.plus_tags), 'plus_tags is supported or not_documented');
+      assert.equal(typeof a.agent.alias.note, 'string');
+      assert.match(a.agent.alias.docs, /^https:\/\/\S+$/, 'links the platform\'s own documentation');
     });
   }
 

@@ -57,12 +57,28 @@ const v = {
     if (!Array.isArray(xs) || xs.length > list.length || xs.some((x) => !list.includes(x))) throw new RunnerError('bad_request', `${name} takes a list of: ${list.join(', ')}.`);
     return xs;
   },
+  // Labels for tagged alias addresses: user+label@domain.
+  tags(xs) {
+    if (xs === undefined) return undefined;
+    if (!Array.isArray(xs) || !xs.length || xs.length > 10 || xs.some((x) => typeof x !== 'string' || !/^[a-z0-9][a-z0-9-]{0,29}$/i.test(x))) {
+      throw new RunnerError('bad_request', 'tags must list 1 to 10 labels of letters, digits and hyphens, such as "victim".');
+    }
+    return [...new Set(xs.map((x) => x.toLowerCase()))];
+  },
   str(s, max, { optional = true } = {}) {
     if (s === undefined && optional) return undefined;
     if (typeof s !== 'string' || s.length > max) throw new RunnerError('bad_request', `Expected text of at most ${max} characters.`);
     return s;
   },
 };
+
+// The signed-in account. Its email alias is shown to agents outside the untrusted program text,
+// so anything but a plain address is dropped.
+const PLAIN_ADDRESS = /^[A-Za-z0-9._+-]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+async function account(a) {
+  const acc = await a.agent.account();
+  return { ...acc, email_alias: typeof acc.email_alias === 'string' && PLAIN_ADDRESS.test(acc.email_alias) ? acc.email_alias : null };
+}
 
 function capabilities(a) {
   return {
@@ -106,7 +122,7 @@ export function createOps({ build }) {
       const accounts = Object.fromEntries(await Promise.all(ADAPTERS.map(async (a) => {
         if (s.platforms[a.id] === false) return [a.id, { allowed: false }];
         try {
-          return [a.id, { allowed: true, ...(await a.agent.account()) }];
+          return [a.id, { allowed: true, ...(await account(a)) }];
         } catch (e) {
           return [a.id, { allowed: true, signed_in: null, error: e.message }];
         }
@@ -178,10 +194,35 @@ export function createOps({ build }) {
       const a = v.adapter(p.platform);
       const handle = v.handle(p.handle);
       await allowed(a);
-      const program = await a.agent.program(handle);
+      // The alias comes along for the test accounts a program asks for. Not reading it never fails the program.
+      const [program, alias] = await Promise.all([
+        a.agent.program(handle),
+        a.agent.alias ? account(a).then((x) => x.email_alias, () => null) : null,
+      ]);
       const built = await build(program);
-      if (p.format === 'json') return summary(program, built);
-      return { markdown: built.markdown };
+      const extra = alias ? { email_alias: alias } : {};
+      if (p.format === 'json') return { ...summary(program, built), ...extra };
+      return { markdown: built.markdown, ...extra };
+    },
+
+    async get_email_alias(p) {
+      const tags = v.tags(p.tags);
+      return each(p, async (a) => {
+        if (!a.agent.alias) throw new RunnerError('unsupported', `${a.label} gives hunters no email alias.`);
+        const acc = await account(a);
+        if (!acc.signed_in) throw new RunnerError('signed_out', `Sign in to ${a.label} in this browser.`);
+        if (!acc.email_alias) throw new RunnerError('platform', `${a.label} did not return a usable email alias for this account.`);
+        const at = acc.email_alias.lastIndexOf('@');
+        const [local, domain] = [acc.email_alias.slice(0, at), acc.email_alias.slice(at + 1)];
+        return {
+          username: acc.username,
+          email_alias: acc.email_alias,
+          plus_tags: a.agent.alias.plus_tags,
+          ...(tags ? { addresses: Object.fromEntries(tags.map((t) => [t, `${local}+${t}@${domain}`])) } : {}),
+          note: `${a.agent.alias.note} Mail to these addresses reaches the user, not you: ask the user for any link or code it brings.`,
+          docs: a.agent.alias.docs,
+        };
+      });
     },
 
     async check_scope(p) {
@@ -318,6 +359,7 @@ function detail(op, p, r) {
   if (op === 'get_report_requirements') return `${r.filing}${r.custom_fields?.length ? `, ${r.custom_fields.length} custom fields` : ''}`;
   if (op === 'search_disclosed_reports') return `${r.reports.length} results`;
   if (op === 'list_scope_changes') return `${r.total} changes${r.checking ? ', still checking' : ''}`;
+  if (op === 'get_email_alias') return `${Object.keys(r).join(', ')}${p.tags ? `, ${p.tags.length} tags` : ''}`;
   return '';
 }
 

@@ -13,6 +13,8 @@
 //            { filled: [field], missed: [reason] } or { error }
 //            watch: { list, signals, scopes, due?, rotate? } finds new and changed scope (see
 //            src/agent/watch.js)
+//            alias: { plus_tags: 'supported' | 'not_documented', note, docs } describes the
+//            email alias the platform forwards to the hunter; account() then returns email_alias
 import hackerone from './hackerone/index.js';
 import bugcrowd from './bugcrowd/index.js';
 

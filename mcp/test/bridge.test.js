@@ -57,14 +57,16 @@ test('MCP tools reach the extension through the host, and errors come back as to
     if (msg.op === 'draft_report') return { error: { code: 'not_in_scope', message: 'evil.com is not an in-scope asset.' } };
     return { value: { op: msg.op } };
   });
-  await waitFor(() => existsSync(join(home, 'sockets')) && readdirSync(join(home, 'sockets')).some((f) => f.endsWith('.sock')));
-  const sock = readdirSync(join(home, 'sockets')).find((f) => f.endsWith('.sock'));
-  assert.equal(statSync(join(home, 'sockets')).mode & 0o777, 0o700, 'socket directory is private');
-  assert.equal(statSync(join(home, 'sockets', sock)).mode & 0o777, 0o600, 'socket is private');
-
+  // Inside try, so a failed check still stops the host and the test run can end.
   const client = new Client({ name: 'bridge-test', version: '1.0.0' });
-  await client.connect(new StdioClientTransport({ command: process.execPath, args: [CLI], env: { ...process.env, SCOPEDOWN_HOME: home } }));
   try {
+    await waitFor(() => existsSync(join(home, 'sockets')) && readdirSync(join(home, 'sockets')).some((f) => f.endsWith('.sock')));
+    const sock = readdirSync(join(home, 'sockets')).find((f) => f.endsWith('.sock'));
+    assert.equal(statSync(join(home, 'sockets')).mode & 0o777, 0o700, 'socket directory is private');
+    // listen() creates the socket and its callback makes it private, so wait for that step.
+    await waitFor(() => (statSync(join(home, 'sockets', sock)).mode & 0o777) === 0o600);
+
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [CLI], env: { ...process.env, SCOPEDOWN_HOME: home } }));
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), ['attach_file', 'check_scope', 'draft_report', 'get_draft', 'get_my_report', 'get_program', 'get_report_requirements', 'get_weaknesses', 'list_drafts', 'list_my_reports', 'list_programs', 'list_scope_changes', 'remove_attachment', 'search_disclosed_reports', 'status', 'update_draft']);
     assert.ok(tools.find((t) => t.name === 'check_scope').annotations.readOnlyHint);

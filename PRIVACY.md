@@ -11,6 +11,7 @@ ScopeDown is a browser extension and a local MCP server by Principle Breach. Thi
 ## What stays on your computer
 
 - **Program data** (scope, policy, rewards) is read from HackerOne or Bugcrowd inside your browser, with your existing session, when you click the extension or an agent you connected asks for it. It is cached in memory for a few minutes.
+- **Your username and platform email alias** (`username@wearehackerone.com`, `username@bugcrowdninja.com`) are read from the platform when an agent you connected asks for them, kept in memory for a minute, and given only to that agent, so it can sign up for test accounts with them. Bugcrowd's profile also holds your email and name; ScopeDown keeps only the username.
 - **Drafts, evidence files, settings and the activity log** are stored in your browser's extension storage and IndexedDB. They stay until you delete them in the agent console or remove the extension.
 - **Scope history**: the scope watch keeps each program's assets (name, type, scope and bounty flags; asset notes only as a short fingerprint) and the changes it found, in IndexedDB, for up to 180 days or 20,000 changes. Clear it under Settings, Data.
 - **The bridge** (the MCP server and its native messaging host) exchanges messages with the extension over a socket in `~/.scopedown` that only your OS user can open, and writes a small log there.

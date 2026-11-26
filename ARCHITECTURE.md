@@ -36,13 +36,15 @@ The extension is the enforcement point. The MCP server and the host only relay.
 - **Rate limits and caching.** At most 3 platform requests per second per platform, and program data is cached for 5 minutes, so an agent loop cannot hammer an account into a ban.
 - **Visible.** The badge counts drafts waiting for review, a notification announces each new draft, and the review page keeps an activity log of every operation an agent ran.
 - **Local only.** Nothing is sent anywhere except the platform requests the hunter's browser makes. The socket directory is created with mode 0700.
-- **Untrusted text.** Program policies and report threads are written by other people. Tool results label them as data so agents do not follow instructions hidden inside them.
+- **Untrusted text.** Program policies and report threads are written by other people. Tool results label them as data so agents do not follow instructions hidden inside them. `get_program` prints the hunter's email alias above that label, and only when it is a plain address.
 
 Out of scope: a malicious process already running as the same OS user. It could read the browser's cookies directly.
 
 ## Platform adapters
 
 Each platform is a folder under `src/platforms/<id>/`: `program.js` reads and normalizes a program (also used by the popup), `agent.js` implements the agent operations from fixed requests, `page.js` holds functions injected into the platform's tabs, and `index.js` describes the adapter. `src/platforms/index.js` registers adapters and documents the contract; `test/adapters.test.js` enforces it. Capabilities a platform lacks are absent from its adapter (Bugcrowd has no `file` and no `disclosed`), and the operations and the console adjust: `status` reports each platform's capabilities to agents.
+
+`account()` returns the signed-in username and, where the adapter has `alias`, the email alias the platform forwards to the hunter. HackerOne names it in GraphQL (`me { email_alias }`); Bugcrowd names it nowhere, and its docs define it as `username@bugcrowdninja.com`, so the adapter builds it from the profile's username. `alias.plus_tags` says whether the platform documents `username+tag@` addresses.
 
 `requirements(handle)` is how a platform describes what a report needs. It returns whether the account can submit, the filing route (`direct` or `platform_form`), the required standard fields, the program's custom fields (key, label, type, allowed values, pattern, help), the in-scope assets with the platform's ids for them, and any quota. Drafts are validated against it.
 
@@ -60,7 +62,8 @@ The extension answers with `{ "type": "response", "id": "7f3c…", "ok": true, "
 
 | Operation | Reads or writes | Notes |
 | --- | --- | --- |
-| `status` | reads | Browsers, signed-in accounts, permissions, Bugcrowd weekly quota, drafts waiting |
+| `status` | reads | Browsers, signed-in accounts and their email aliases, permissions, Bugcrowd weekly quota, drafts waiting |
+| `get_email_alias` | reads | The email alias each platform forwards to the hunter, for test accounts, with `+tag` addresses |
 | `list_programs` | reads | Programs the hunter can submit to; private only, query and paging |
 | `get_program` | reads | The ScopeDown Markdown and a structured summary |
 | `check_scope` | reads | Per-target verdict: in scope, out of scope or not listed, with the matching asset |

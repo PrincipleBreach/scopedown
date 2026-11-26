@@ -28,9 +28,10 @@ Your session never leaves the browser. The agent talks to this server, the serve
 
 | Tool | What it does |
 | --- | --- |
-| `status` | Connected browsers, signed-in accounts, what you allowed, drafts waiting |
+| `status` | Connected browsers, signed-in accounts and their email aliases, what you allowed, drafts waiting |
+| `get_email_alias` | Your platform email aliases for the test accounts programs ask for, and `username+tag@` addresses for several accounts |
 | `list_programs` | Programs you can submit to; `private_only`, `query`, paging |
-| `get_program` | The program as agent-ready Markdown: key rules, scope tables, rewards, full policy |
+| `get_program` | The program as agent-ready Markdown: key rules, scope tables, rewards, full policy, headed by your email alias for that platform |
 | `check_scope` | Verdict per host, URL, IP or CIDR: in scope, out of scope, or not listed |
 | `get_report_requirements` | What a report to this program needs: required fields, custom fields and their allowed values, assets, quota, and whether it is filed directly or finished in the platform's form |
 | `get_weaknesses` | HackerOne weaknesses, or Bugcrowd VRT entries by full id with their P1 to P5 priority |
@@ -62,4 +63,4 @@ MIT. See [LICENSE](LICENSE). Source, issues and the security policy: [github.com
 
 ---
 
-<sub>Built by <a href="https://principlebreach.com">Principle Breach</a> — offensive security research.</sub>
+<sub>Built by <a href="https://principlebreach.com">Principle Breach</a>. Offensive security research.</sub>

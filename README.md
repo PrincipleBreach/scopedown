@@ -56,6 +56,7 @@ YAML front matter; key rules quoted from the policy (required headers, test acco
 | Tool | HackerOne | Bugcrowd |
 | --- | --- | --- |
 | `status` | Accounts, permissions, platforms and their capabilities | Same |
+| `get_email_alias` | Your `username@wearehackerone.com` alias, and `username+tag@` addresses for several test accounts | Your `username@bugcrowdninja.com` alias; Bugcrowd does not document `+tag` addresses |
 | `list_programs` | Programs you can submit to, private invitations, search, paging | Accepted private invitations, search, paging |
 | `get_program` | Scope and policy as Markdown or JSON, public or private | Same, from the engagement brief |
 | `check_scope` | Verdict per host, URL, IP or CIDR | Same, including `{subdomain}` targets |

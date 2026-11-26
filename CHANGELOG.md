@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0
+
+Email alias
+- New `get_email_alias` tool: the address each platform forwards to you, `username@wearehackerone.com` and `username@bugcrowdninja.com`, for the test accounts programs ask for. `tags` gives one address per test account, such as `username+victim@wearehackerone.com`. HackerOne documents these tagged addresses; Bugcrowd does not, and the tool says so.
+- `status` shows the alias next to each signed-in account, and `get_program` names it for agents.
+- HackerOne's alias is the one its API returns. Bugcrowd's is built from your profile username, as Bugcrowd's docs define it. ScopeDown keeps only the username from that profile.
+- Bugcrowd: `status` knows your username before your first submission.
+
+## scopedown-mcp 1.2.0
+
+- `get_email_alias`: the user's HackerOne and Bugcrowd email aliases, with tagged addresses for several test accounts, whether each platform documents tags, and a note that mail to them reaches the user.
+- `get_program` starts with the user's alias for that platform, above the line that marks the program text as untrusted. Only a plain address is printed.
+- The server instructions tell agents to sign up for test accounts with the alias, and to ask the user for links or codes sent to it.
+- `status` describes the alias on each account.
+- Needs ScopeDown 1.2.0 in the browser.
+
 ## 1.1.0
 
 Scope watch
